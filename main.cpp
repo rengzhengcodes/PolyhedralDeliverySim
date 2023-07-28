@@ -6,7 +6,7 @@ int main(int argc, char* argv[])
     isl_ctx *p_ctx = isl_ctx_alloc();
     /* Reads a map from a string relating source location and the data occupied
      * within. The map is represented using a binary relational diagram where
-     * source implies data.*/
+     * source implies data. */
     isl_map *p_src_occupancy = isl_map_read_from_str(
         p_ctx,
         "{ [xs, ys] -> [d0, d1] : d0=xs and 0 <= d1 < 8 and 0 <= xs < 8 and 0 <= ys < 8 }"
