@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
      */
     isl_map *p_src_occupancy = isl_map_read_from_str(
         p_ctx,
-        "{ [xs, ys] -> [d0, d1] : d0=x and 0 <= d1 < 8 and 0 <= x < 8 and 0 <= y < 8 }"
+        "{ [xs, ys] -> [d0, d1] : d0=xs and 0 <= d1 < 8 and 0 <= xs < 8 and 0 <= ys < 8 }"
     );
     /**
      * Reads a map froma  string relating destination location and the data
@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
      */
     isl_map *p_dst_fill = isl_map_read_from_str(
         p_ctx,
-        "{ [xd, yd] -> [d0, d1] : d0=x and d1=y and 0 <= x < 8 and 0 <= y < 8 }"
+        "{ [xd, yd] -> [d0, d1] : d0=xd and d1=yd and 0 <= xd < 8 and 0 <= yd < 8 }"
     );
   
     std::string result = analyze_latency(p_src_occupancy, p_dst_fill);
