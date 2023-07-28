@@ -24,7 +24,14 @@ int main(int argc, char* argv[])
 }
 
 /**
+ * Analyzes the latency of a memory access by finding the minimum path from
+ * every source to every destination for a particular data, then taking the max
+ * of all the minimum paths for that data, then taking the max of all the latencies
+ * for all the data.
  * 
+ * @param p_src_occupancy   A map relating source location and the data occupied.
+ * @param p_dst_fill        A map relating destination location and the data 
+ *                          requested.
  */
 std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill)
 {
