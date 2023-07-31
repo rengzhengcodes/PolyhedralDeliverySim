@@ -6,4 +6,4 @@
 // Includes ISL maps/binary relations.
 #include <isl/map.h>
 
-std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_pw_aff *dist_func);
+std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_map *dist_func);
