@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
 std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_map *dist_func)
 {
     // Prints out the inputs.
-    std::cout << "p_src_occupancy: " << std::endl;
+    std::cout << "\np_src_occupancy: " << std::endl;
     isl_map_dump(p_src_occupancy);
     std::cout << "p_dst_fill: " << std::endl;
     isl_map_dump(p_dst_fill);
@@ -74,7 +74,7 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_m
     isl_map *dst_fill_inverted = isl_map_reverse(
         isl_map_copy(p_dst_fill)
     );
-    std::cout << "dst_fill_inverted: " << std::endl;
+    std::cout << "\ndst_fill_inverted: " << std::endl;
     isl_map_dump(dst_fill_inverted);
     /* Inverts src_occupancy such that data implies source.
      * i.e. {[xs, ys] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
@@ -90,7 +90,7 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_m
             isl_map_copy(dst_fill_inverted),
             isl_map_copy(src_occupancy_inverted)
     );
-    std::cout << "data_TO_dst_to_src: " << std::endl;
+    std::cout << "\ndata_TO_dst_to_src: " << std::endl;
     isl_map_dump(data_TO_dst_to_src);
     /* Wraps dst fill such that the binary relation implies data.
      * i.e. {[[xd, yd] -> [d0, d1]] -> [d0, d1]} */
@@ -106,7 +106,7 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_m
         isl_map_copy(dst_fill_wrapped),
         isl_map_copy(data_TO_dst_to_src)
     );
-    std::cout << "dst_to_data_TO_dst_to_src: " << std::endl;
+    std::cout << "\ndst_to_data_TO_dst_to_src: " << std::endl;
     isl_map_dump(dst_to_data_TO_dst_to_src);
 
     // Calculates the Manhattan distance for each [xd, yd] -> [d0, d1]
@@ -114,10 +114,17 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_m
         isl_map_copy(dst_to_data_TO_dst_to_src),
         isl_map_copy(dist_func)
     );
-    std::cout << "manhattan_distance: " << std::endl;
+    std::cout << "\nmanhattan_distance: " << std::endl;
     isl_map_dump(manhattan_distance);
 
-    // Gets the minimum distance for each [xd, yd] -> [d0, d1]
+    // Combines the range of [[xd, yd] -> [d0, d1]] into one set.
+    isl_map *manhattan_distance_combined = isl_map_range_product(
+        isl_map_copy(p_dst_fill),
+        isl_map_copy(p_src_occupancy)
+    );
+
+    // Combines 
+
 
     return "Coding In Progress...";
 }
