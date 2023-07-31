@@ -99,5 +99,20 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_p
     std::cout << "dst_to_data_TO_dst_to_src: " << std::endl;
     isl_map_dump(dst_to_data_TO_dst_to_src);
 
+    // Calculates the Manhattan distance for each [xd, yd] -> [d0, d1]
+    isl_map *manhattan_distance = isl_map_apply_range(
+        isl_map_copy(dst_to_data_TO_dst_to_src),
+        isl_map_from_pw_aff(isl_pw_aff_copy(dist_func))
+    );
+    std::cout << "manhattan_distance: " << std::endl;
+    isl_map_dump(manhattan_distance);
+
+    // Gets the minimum distance for each [xd, yd] -> [d0, d1]
+    isl_map *min_distance = isl_map_min(
+        isl_map_copy(manhattan_distance)
+    );
+    std::cout << "min_distance: " << std::endl;
+    isl_map_dump(min_distance);
+
     return "Coding In Progress...";
 }
