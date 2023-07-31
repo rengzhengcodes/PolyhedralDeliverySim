@@ -114,7 +114,6 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_m
         isl_map_copy(dst_to_data_TO_dst_to_src),
         isl_map_copy(dist_func)
     );
-    
     std::cout << "manhattan_distance: " << std::endl;
     isl_map_dump(manhattan_distance);
 
