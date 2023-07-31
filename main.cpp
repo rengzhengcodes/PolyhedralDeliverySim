@@ -18,6 +18,23 @@ int main(int argc, char* argv[])
         p_ctx,
         "{ [xd, yd] -> [d0, d1] : d0=xd and d1=yd and 0 <= xd < 8 and 0 <= yd < 8 }"
     );
+    /* Defines an ISL distance function that calculates the manhattan distance
+     * between two points. */
+    isl_pw_aff *dist_func = isl_pw_aff_read_from_str(
+        p_ctx,
+        "{"
+            "[[xd, yd] -> [xs, ys]] -> [(xd - xs) + (yd - ys)] : "
+                "(xd - xs) >= 0 and (yd - ys) >= 0;"
+            "[[xd, yd] -> [xs, ys]] -> [(xs - xd) + (ys - yd)] : "
+                "(xd - xs) < 0 and (yd - ys) < 0;"
+            "[[xd, yd] -> [xs, ys]] -> [(xs - xd) + (yd - ys)] : "
+                "(xd - xs) < 0 and (yd - ys) >= 0;"
+            "[[xd, yd] -> [xs, ys]] -> [(xd - xs) + (ys - yd)] : "
+                "(xd - xs) >= 0 and (yd - ys) < 0"
+        "}"
+    );
+    isl_pw_aff_dump(dist_func);
+
   
     std::string result = analyze_latency(p_src_occupancy, p_dst_fill);
     std::cout << result << std::endl;
@@ -32,6 +49,7 @@ int main(int argc, char* argv[])
  * @param p_src_occupancy   A map relating source location and the data occupied.
  * @param p_dst_fill        A map relating destination location and the data 
  *                          requested.
+ * @param dist_func         The distance function to use.
  */
 std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill)
 {
