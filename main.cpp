@@ -20,23 +20,23 @@ int main(int argc, char* argv[])
     );
     /* Defines an ISL distance function that calculates the manhattan distance
      * between two points. */
-    isl_pw_aff *dist_func = isl_pw_aff_read_from_str(
+    isl_pw_aff *manhattan_metric = isl_pw_aff_read_from_str(
         p_ctx,
         "{"
             "[[xd, yd] -> [xs, ys]] -> [(xd - xs) + (yd - ys)] : "
-                "(xd - xs) >= 0 and (yd - ys) >= 0;"
-            "[[xd, yd] -> [xs, ys]] -> [(xs - xd) + (ys - yd)] : "
-                "(xd - xs) < 0 and (yd - ys) < 0;"
-            "[[xd, yd] -> [xs, ys]] -> [(xs - xd) + (yd - ys)] : "
-                "(xd - xs) < 0 and (yd - ys) >= 0;"
-            "[[xd, yd] -> [xs, ys]] -> [(xd - xs) + (ys - yd)] : "
-                "(xd - xs) >= 0 and (yd - ys) < 0"
+                "xd >= xs and yd >= ys;"
+            "[[xd, yd] -> [xs, ys]] -> [-(xd - xs) + -(yd - ys)] : "
+                "xd < xs and yd < ys;"
+            "[[xd, yd] -> [xs, ys]] -> [-(xd - xs) + (yd - ys)] : "
+                "xd < xs and yd >= ys;"
+            "[[xd, yd] -> [xs, ys]] -> [(xd - xs) + -(yd - ys)] : "
+                "xd >= xs and yd < ys"
         "}"
     );
-    isl_pw_aff_dump(dist_func);
+    isl_pw_aff_dump(manhattan_metric);
 
   
-    std::string result = analyze_latency(p_src_occupancy, p_dst_fill);
+    std::string result = analyze_latency(p_src_occupancy, p_dst_fill, manhattan_metric);
     std::cout << result << std::endl;
 }
 
@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
  *                          requested.
  * @param dist_func         The distance function to use.
  */
-std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill)
+std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_pw_aff *dist_func)
 {
     // Prints out the inputs.
     std::cout << "p_src_occupancy: " << std::endl;
