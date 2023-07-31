@@ -35,25 +35,40 @@ int main(int argc, char* argv[])
  */
 std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill)
 {
-    // Wraps dst fill such that the binary relation implies data.
+    /* Wraps dst fill such that the binary relation implies data.
+     * i.e. {[[xd, yd] -> [d0, d1]] -> [d0, d1]} */
     isl_map *dst_fill_wrapped = isl_map_range_map(p_dst_fill);
     // Prints out dst_fill_wrapped in the terminal.
     // isl_map_dump(dst_fill_wrapped);
     
-    // Inverts src_occupancy such that data implies source.
+    /* Inverts src_occupancy such that data implies source.
+     * i.e. {[xs, ys] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
     isl_map *src_occupancy_inverted = isl_map_reverse(p_src_occupancy);
     // Prints out src_occupancy_inverted in the terminal.
     // isl_map_dump(src_occupancy_inverted);
 
-    // Composites dst_fill_wrapped and src_occupancy_inverted such that data
-    // implies source.
-    isl_map *dst_fill_wrapped_composed = isl_map_apply_range(
+    /* Composites dst_fill_wrapped and src_occupancy_inverted such that data
+     * implies source.
+     * i.e. {[[xd, yd] -> [d0, d1]] -> [xs, ys]} */
+    isl_map *dst_to_data_to_src = isl_map_apply_range(
         dst_fill_wrapped,
         src_occupancy_inverted
     );
-    // Prints out dst_fill_wrapped_composed in the terminal.
-    isl_map_dump(dst_fill_wrapped_composed);
+    // Prints out dst_to_data_to_src in the terminal.
+    // isl_map_dump(dst_to_data_to_src);
     
+    
+
+    /* Mutates dst_to_data_to_src such that it is of the form
+     * {[[xd, yd] -> [d0, d1]] -> [[xd, yd] -> [xs, ys]]} by extracting 
+     * [xd, yd] for the second binary relation from the first binary relation. */
+    isl_map *dst_to_data_to_dst_to_src = isl_map_factor_domain(
+        dst_to_data_to_src
+    );
+
+    
+
+
 
     return "Coding In Progress...";
 }
