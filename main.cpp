@@ -35,29 +35,16 @@ int main(int argc, char* argv[])
  */
 std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill)
 {
-    /* Wraps dst fill such that the binary relation implies data.
-     * i.e. {[[xd, yd] -> [d0, d1]] -> [d0, d1]} */
-    isl_map *dst_fill_wrapped = isl_map_range_map(
-        isl_map_copy(p_dst_fill)
-    );
-    // Prints out dst_fill_wrapped in the terminal.
-    // isl_map_dump(dst_fill_wrapped);
-
     /* Invertsdst_fill such that data implies dst.
      * i.e. {[xd, yd] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
     isl_map *dst_fill_inverted = isl_map_reverse(
         isl_map_copy(p_dst_fill)
     );
-    // Prints out dst_fill_inverted in the terminal.
-    // isl_map_dump(dst_fill_inverted);
-    
     /* Inverts src_occupancy such that data implies source.
      * i.e. {[xs, ys] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
     isl_map *src_occupancy_inverted = isl_map_reverse(
         isl_map_copy(p_src_occupancy)
     );
-    // Prints out src_occupancy_inverted in the terminal.
-    // isl_map_dump(src_occupancy_inverted);
 
     /* Takes the factored range of src_occupancy_inverted and dst_fill_inverted
      * to get {[d0, d1] -> [[xd, yd] -> [xs, ys]]} */
@@ -65,8 +52,11 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill)
             isl_map_copy(dst_fill_inverted),
             isl_map_copy(src_occupancy_inverted)
     );
-    // Prints out data_to_dst_to_src in the terminal.
-    // isl_map_dump(data_TO_dst_to_src);
+    /* Wraps dst fill such that the binary relation implies data.
+     * i.e. {[[xd, yd] -> [d0, d1]] -> [d0, d1]} */
+    isl_map *dst_fill_wrapped = isl_map_range_map(
+        isl_map_copy(p_dst_fill)
+    );
 
     /* Composites dst_fill_wrapped and data_to_dst_to_src to get
      * {[[xd, yd] -> [d0, d1]] -> [[xd, yd] -> [xs, ys]]} */
@@ -74,7 +64,6 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill)
         isl_map_copy(dst_fill_wrapped),
         isl_map_copy(data_TO_dst_to_src)
     );
-    // Prints out dst_to_data_to_dst_to_src in the terminal.
     isl_map_dump(dst_to_data_TO_dst_to_src);
 
     return "Coding In Progress...";
