@@ -99,10 +99,12 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_m
     );
     dump("\ndst_to_data_TO_dst_to_src: ", dst_to_data_TO_dst_to_src);
 
-    if (islIntermediates) std::cout << '\n' << std::endl;
     // Restricts the range such that xd' = xd and yd' = yd.
+    if (islIntermediates) std::cout << '\n' << std::endl;
     for (int i = 0; i < isl_map_dim(p_dst_fill, isl_dim_in); i++)
     {
+        /* Restricts the ith element of the output by equating it to the ith
+         * element of the input. Treats input and output as if it were flat. */
         dst_to_data_TO_dst_to_src = isl_map_equate(
             dst_to_data_TO_dst_to_src,
             isl_dim_in,
