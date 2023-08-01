@@ -135,5 +135,5 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_m
     );
     dump("\nmax_min_distance: ", max_min_distance);
 
-    return "Coding In Progress...";
+    return isl_multi_val_to_str(max_min_distance);
 }
