@@ -3,6 +3,7 @@
 
 // Includes ISL affine list/piecewise functions.
 #include <isl/aff.h>
+#include <isl/ilp.h>
 // Includes ISL maps/binary relations.
 #include <isl/map.h>
 

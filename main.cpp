@@ -117,8 +117,20 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_m
     );
     std::cout << "manhattan_distance: " << std::endl;
     isl_map_dump(manhattan_distance);
-    
 
+    // Computes the minimum distance from every source to every destination.
+    isl_multi_pw_aff *min_distance = isl_map_min_multi_pw_aff(
+        isl_map_copy(manhattan_distance)
+    );
+    std::cout << "\nmin_distance: " << std::endl;
+    isl_multi_pw_aff_dump(min_distance);
+
+    // Computes the maximum of minimum distances for every data.
+    isl_multi_val *max_min_distance = isl_multi_pw_aff_max_multi_val(
+        isl_multi_pw_aff_copy(min_distance)
+    );
+    std::cout << "\nmax_min_distance: " << std::endl;
+    isl_multi_val_dump(max_min_distance);
 
     return "Coding In Progress...";
 }
