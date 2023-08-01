@@ -109,21 +109,22 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_m
     std::cout << "\ndst_to_data_TO_dst_to_src: " << std::endl;
     isl_map_dump(dst_to_data_TO_dst_to_src);
 
-    // Calculates the Manhattan distance for each [xd, yd] -> [d0, d1]
+    /* Wraps dst_to_data_TO_dst_to_src so that [[xd, yd] -> [xs, ys]] is preserved
+     * during composition with the distance map. This is important as we want to
+     * preserve the [xs, ys] dimension to reach a singular distance value. */
+    isl_map *dst_to_data_TO_dst_to_src_wrapped = isl_map_range_map(
+        isl_map_copy(dst_to_data_TO_dst_to_src)
+    );
+    std::cout << "dst_to_data_TO_dst_to_src_wrapped: " << std::endl;
+    isl_map_dump(dst_to_data_TO_dst_to_src_wrapped);
+
+    // Calculates the manhattan distance between every source and destination.
     isl_map *manhattan_distance = isl_map_apply_range(
-        isl_map_copy(dst_to_data_TO_dst_to_src),
+        isl_map_copy(dst_to_data_TO_dst_to_src_wrapped),
         isl_map_copy(dist_func)
     );
     std::cout << "\nmanhattan_distance: " << std::endl;
     isl_map_dump(manhattan_distance);
-
-    // Combines the range of [[xd, yd] -> [d0, d1]] into one set.
-    isl_map *manhattan_distance_combined = isl_map_range_product(
-        isl_map_copy(p_dst_fill),
-        isl_map_copy(p_src_occupancy)
-    );
-
-    // Combines 
 
 
     return "Coding In Progress...";
