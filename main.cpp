@@ -9,14 +9,14 @@ int main(int argc, char* argv[])
      * source implies data. */
     isl_map *p_src_occupancy = isl_map_read_from_str(
         p_ctx,
-        "{ [xs, ys] -> [d0, d1] : d0=xs and 0 <= d1 < 8 and 0 <= xs < 8 and 0 <= ys < 8 }"
+        "{ [xs, ys] -> [d0, d1] : d0=xs and d1=ys and 0 <= xs < 8 and 0 <= ys < 8 }"
     );
     /* Reads a map from a string relating destination location and the data
      * requested. The map is represented using a binary relational diagram where
      * source implies data. */
     isl_map *p_dst_fill = isl_map_read_from_str(
         p_ctx,
-        "{ [xd, yd] -> [d0, d1] : d0=xd and d1=yd and 0 <= xd < 8 and 0 <= yd < 8 }"
+        "{ [xd, yd] -> [d0, d1] : d0=xd and 0 <= d1 < 8 and 0 <= xd < 8 and 0 <= yd < 8 }"
     );
     /* Defines an ISL distance function that calculates the manhattan distance
      * between two points. */
@@ -101,12 +101,27 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_m
     isl_map_dump(dst_fill_wrapped);
 
     /* Composites dst_fill_wrapped and data_to_dst_to_src to get
-     * {[[xd, yd] -> [d0, d1]] -> [[xd, yd] -> [xs, ys]]} */
+     * {[[xd, yd] -> [d0, d1]] -> [[xd', yd'] -> [xs, ys]]} */
     isl_map *dst_to_data_TO_dst_to_src = isl_map_apply_range(
         isl_map_copy(dst_fill_wrapped),
         isl_map_copy(data_TO_dst_to_src)
     );
     std::cout << "\ndst_to_data_TO_dst_to_src: " << std::endl;
+    isl_map_dump(dst_to_data_TO_dst_to_src);
+
+
+    // Restricts the range such that xd' = xd and yd' = yd.
+    for (int i = 0; i < isl_map_dim(dst_to_data_TO_dst_to_src, isl_dim_in); i++)
+    {
+        dst_to_data_TO_dst_to_src = isl_map_equate(
+            dst_to_data_TO_dst_to_src,
+            isl_dim_in,
+            i,
+            isl_dim_out,
+            i
+        );
+    };
+    std::cout << "dst_to_data_TO_dst_to_src_restricted: " << std::endl;
     isl_map_dump(dst_to_data_TO_dst_to_src);
 
     /* Computes the manhattan distance between the destination for a data and
