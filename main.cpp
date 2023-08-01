@@ -9,14 +9,14 @@ int main(int argc, char* argv[])
      * source implies data. */
     isl_map *p_src_occupancy = isl_map_read_from_str(
         p_ctx,
-        "{ [xs, ys] -> [d0, d1] : d0=xs and d1=ys and 0 <= xs < 8 and 0 <= ys < 8 }"
+        "{ [xs, ys] -> [d0, d1] : d0=xs and 0 <= d1 < 8 and 0 <= xs < 8 and 0 <= ys < 8 }"
     );
     /* Reads a map from a string relating destination location and the data
      * requested. The map is represented using a binary relational diagram where
      * source implies data. */
     isl_map *p_dst_fill = isl_map_read_from_str(
         p_ctx,
-        "{ [xd, yd] -> [d0, d1] : d0=xd and 0 <= d1 < 8 and 0 <= xd < 8 and 0 <= yd < 8 }"
+        "{ [xd, yd] -> [d0, d1] : d0=xd and d1=yd and 0 <= xd < 8 and 0 <= yd < 8 }"
     );
     /* Defines an ISL distance function that calculates the manhattan distance
      * between two points. */
