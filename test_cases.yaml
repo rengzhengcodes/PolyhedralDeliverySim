@@ -11,7 +11,11 @@
             [[xd, yd] -> [xs, ys]] -> [(xd - xs) + -(yd - ys)] : 
                 xd >= xs and yd < ys
         }
-  expected:
-    latency: "{ [7] }"
+    expected:
+        latency: "{ [7] }"
 -   p_src: "{ [xs, ys] -> [d0, d1] : d0 = xs and 0 <= d1 < 8 and 0 <= xs < 8 and 0 <= ys < 8 }"
+    p_dst: "{ [xd, yd] -> [d0, d1] : d0 = xd and d1 = yd and 0 <= xd < 8 and 0 <= yd < 8 }"
+    p_dist: *2d_manhattan_dist
+    expected:
+        latency: "{ [1] }"
     
