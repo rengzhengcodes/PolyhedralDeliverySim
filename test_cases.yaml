@@ -17,5 +17,5 @@
     p_dst: "{ [xd, yd] -> [d0, d1] : d0 = xd and d1 = yd and 0 <= xd < 8 and 0 <= yd < 8 }"
     p_dist: *2d_manhattan_dist
     expected:
-        latency: "{ [1] }"
+        latency: "{ [0] }"
     
