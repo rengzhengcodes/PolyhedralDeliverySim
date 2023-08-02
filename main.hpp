@@ -8,6 +8,7 @@
 #include <isl/map.h>
 
 std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_map *dist_func);
+std::string analyze_latency(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func);
 
 // Defines debug variables from environment variables.
 #include <string.h>

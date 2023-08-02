@@ -2,47 +2,24 @@
 
 int main(int argc, char* argv[])
 {
-    // Allocates space to the isl context and returns a pointer to it.
-    isl_ctx *p_ctx = isl_ctx_alloc();
-    /* Reads a map from a string relating source location and the data occupied
-     * within. The map is represented using a binary relational diagram where
-     * source implies data. */
-    isl_map *p_src_occupancy = isl_map_read_from_str(
-        p_ctx,
-        "{ [xs, ys] -> [d0, d1] : d0=xs and d1=ys and 0 <= xs < 8 and 0 <= ys < 8 }"
-    );
-    /* Reads a map from a string relating destination location and the data
-     * requested. The map is represented using a binary relational diagram where
-     * source implies data. */
-    isl_map *p_dst_fill = isl_map_read_from_str(
-        p_ctx,
-        "{ [xd, yd] -> [d0, d1] : d0=xd and 0 <= d1 < 8 and 0 <= xd < 8 and 0 <= yd < 8 }"
-    );
-    /* Defines an ISL distance function that calculates the manhattan distance
-     * between two points. */
-    isl_pw_aff *manhattan_metric = isl_pw_aff_read_from_str(
-        p_ctx,
-        "{"
-            "[[xd, yd] -> [xs, ys]] -> [(xd - xs) + (yd - ys)] : "
-                "xd >= xs and yd >= ys;"
-            "[[xd, yd] -> [xs, ys]] -> [-(xd - xs) + -(yd - ys)] : "
-                "xd < xs and yd < ys;"
-            "[[xd, yd] -> [xs, ys]] -> [-(xd - xs) + (yd - ys)] : "
-                "xd < xs and yd >= ys;"
-            "[[xd, yd] -> [xs, ys]] -> [(xd - xs) + -(yd - ys)] : "
-                "xd >= xs and yd < ys"
-        "}"
-    );
-    dump("manhattan_metric: ", manhattan_metric);
-    
-    // Turns the above piecewise affine into a map.
-    isl_map *manhattan_metric_map = isl_map_from_pw_aff(
-        isl_pw_aff_copy(manhattan_metric)
-    );
-    dump("manhattan_metric_map: ", manhattan_metric_map);
+    // Defines the src occupancy map as a string.
+    std::string src_occupancy = "{ [xs, ys] -> [d0, d1] : d0=xs and d1=ys and 0 <= xs < 8 and 0 <= ys < 8 }";
+    // Defines the dst fill map as a string.
+    std::string dst_fill = "{ [xd, yd] -> [d0, d1] : d0=xd and 0 <= d1 < 8 and 0 <= xd < 8 and 0 <= yd < 8 }";
+    // Defines the manhattan metric between two 2D points as a string.
+    std::string manhattan_metric = "{"
+        "[[xd, yd] -> [xs, ys]] -> [(xd - xs) + (yd - ys)] : "
+            "xd >= xs and yd >= ys;"
+        "[[xd, yd] -> [xs, ys]] -> [-(xd - xs) + -(yd - ys)] : "
+            "xd < xs and yd < ys;"
+        "[[xd, yd] -> [xs, ys]] -> [-(xd - xs) + (yd - ys)] : "
+            "xd < xs and yd >= ys;"
+        "[[xd, yd] -> [xs, ys]] -> [(xd - xs) + -(yd - ys)] : "
+            "xd >= xs and yd < ys"
+    "}";
 
   
-    std::string result = analyze_latency(p_src_occupancy, p_dst_fill, manhattan_metric_map);
+    std::string result = analyze_latency(src_occupancy, dst_fill, manhattan_metric);
     std::cout << result << std::endl;
 }
 
@@ -57,8 +34,11 @@ int main(int argc, char* argv[])
  *                          requested.
  * @param dist_func         The distance function to use, as a map.
  */
-std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_map *dist_func)
-{
+std::string analyze_latency (
+    isl_map *p_src_occupancy, 
+    isl_map *p_dst_fill, 
+    isl_map *dist_func
+) {
     // Prints out the inputs.
     dump("\np_src_occupancy: ", p_src_occupancy);
     dump("p_dst_fill: ", p_dst_fill);
@@ -137,5 +117,81 @@ std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_m
     );
     dump("\nmax_min_distance: ", max_min_distance);
 
-    return isl_multi_val_to_str(max_min_distance);
+    // Gets the string representation of the maximum minimum distance.
+    std::string result = isl_multi_val_to_str(max_min_distance);
+
+    // Frees the isl intermediate objects.
+    isl_map_free(dst_fill_inverted);
+    isl_map_free(src_occupancy_inverted);
+    isl_map_free(data_TO_dst_to_src);
+    isl_map_free(dst_fill_wrapped);
+    isl_map_free(dst_to_data_TO_dst_to_src);
+    isl_map_free(manhattan_distance);
+    isl_multi_pw_aff_free(min_distance);
+    isl_multi_val_free(max_min_distance);
+
+    return result;
+}
+
+/**
+ * A wrapper for analyze_latency that takes in strings instead of isl objects.
+ * 
+ * @param src_occupancy     A string representation of a map relating source
+ *                         location and the data occupied.
+ * @param dst_fill          A string representation of a map relating destination
+ *                         location and the data requested.
+ * @param dist_func         A string representation of a distance function to use.
+ *
+ * @return                  A string representation of the maximum latency.
+ */
+std::string analyze_latency (
+    const std::string& src_occupancy, 
+    const std::string& dst_fill, 
+    const std::string& dist_func
+) {
+    // Creates a new isl context.
+    isl_ctx *p_ctx = isl_ctx_alloc();
+
+    // Reads the string representations of the maps into isl objects.
+    isl_map *p_src_occupancy = isl_map_read_from_str(
+        p_ctx,
+        src_occupancy.c_str()
+    );
+    isl_map *p_dst_fill = isl_map_read_from_str(
+        p_ctx,
+        dst_fill.c_str()
+    );
+    isl_pw_aff *p_dist_func = isl_pw_aff_read_from_str(
+        p_ctx,
+        dist_func.c_str()
+    );
+
+    // Turns dist_func into a map.
+    isl_map *p_dist_func_map = isl_map_from_pw_aff(
+        isl_pw_aff_copy(p_dist_func)
+    );
+
+    // Dumps the isl objects.
+    dump("\np_src_occupancy: ", p_src_occupancy);
+    dump("p_dst_fill: ", p_dst_fill);
+    dump("p_dist_func: ", p_dist_func);
+    dump("p_dist_func_map: ", p_dist_func_map);
+
+    // Frees p_dist_func as it's now no longer needed once the map is formed.
+    isl_pw_aff_free(p_dist_func);
+
+    // Calls the isl version of analyze_latency.
+    std::string result = analyze_latency(
+        p_src_occupancy,
+        p_dst_fill,
+        p_dist_func_map
+    );
+
+    // Frees the isl objects.
+    isl_map_free(p_src_occupancy);
+    isl_map_free(p_dst_fill);
+    isl_map_free(p_dist_func_map);
+    isl_ctx_free(p_ctx);
+
+    return result;
 }
