@@ -125,3 +125,16 @@
         }
     expected:
         latency: "{ [28] }"
+-   p_src: |
+        { [xs, ys, z1s, z2s] -> [d0, d1, d2, d3] :
+            0 <= d0 < 8 and 0 <= d1 < 8 and 0 <= d2 < 8 and 0 <= d3 < 8 and 
+            xs=0 and ys=0 and z1s=0 and z2s=0
+        }
+    p_dst: |
+        { [xd, yd, z1d, z2d] -> [d0, d1, d2, d3] : 
+            d0 = xd and d1 = yd and d2 = z1d and d3 = z2d and 
+            0 <= xd < 8 and 0 <= yd < 8 and 0 <= z1d < 8 and 0 <= z2d < 8
+        }
+    p_dist: *4d_manhattan_dist
+    expected:
+        latency: "{ [28] }"
