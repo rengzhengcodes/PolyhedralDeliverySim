@@ -56,3 +56,72 @@
     p_dist: *2d_manhattan_dist
     expected:
         latency: "{ [0] }"
+-   p_src: |
+        { [xs, ys, z1s, z2s] -> [d0, d1, d2, d3] : 
+            d0 = xs and d1 = ys and d2 = z1s and d3 = z2s and 
+            0 <= xs < 8 and 0 <= ys < 8 and 0 <= z1s < 8 and 0 <= z2s < 8
+        }
+    p_dst: |
+        { [xd, yd, z1d, z2d] -> [d0, d1, d2, d3] :
+            0 <= d0 < 8 and 0 <= d1 < 8 and 0 <= d2 < 8 and 0 <= d3 < 8 and 
+            xd=0 and yd=0 and z1d=0 and z2d=0
+        }
+    p_dist: &4d_manhattan_dist |
+        {
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + (yd - ys) + (z1d - z1s) + (z2d - z2s)] : 
+                (xd >= xs) and (yd >= ys) and (z1d >= z1s) and (z2d >= z2s); 
+
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + (yd - ys) + (z1d - z1s) + (z2d - z2s)] : 
+                (xd < xs) and (yd >= ys) and (z1d >= z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + -(yd - ys) + (z1d - z1s) + (z2d - z2s)] : 
+                (xd < xs) and (yd < ys) and (z1d >= z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + -(yd - ys) + -(z1d - z1s) + (z2d - z2s)] : 
+                (xd < xs) and (yd < ys) and (z1d < z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + -(yd - ys) + -(z1d - z1s) + -(z2d - z2s)] : 
+                (xd < xs) and (yd < ys) and (z1d < z1s) and (z2d < z2s); 
+            
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + -(yd - ys) + (z1d - z1s) + (z2d - z2s)] : 
+                (xd >= xs) and (yd < ys) and (z1d >= z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + -(yd - ys) + -(z1d - z1s) + (z2d - z2s)] : 
+                (xd >= xs) and (yd < ys) and (z1d < z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + -(yd - ys) + -(z1d - z1s) + -(z2d - z2s)] : 
+                (xd >= xs) and (yd < ys) and (z1d < z1s) and (z2d < z2s); 
+            
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + (yd - ys) + -(z1d - z1s) + (z2d - z2s)] : 
+                (xd >= xs) and (yd >= ys) and (z1d < z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + (yd - ys) + -(z1d - z1s) + -(z2d - z2s)] : 
+                (xd >= xs) and (yd >= ys) and (z1d < z1s) and (z2d < z2s); 
+            
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + (yd - ys) + (z1d - z1s) + -(z2d - z2s)] : 
+                (xd >= xs) and (yd >= ys) and (z1d >= z1s) and (z2d < z2s); 
+
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + (yd - ys) + -(z1d - z1s) + -(z2d - z2s)] : 
+                (xd < xs) and (yd >= ys) and (z1d < z1s) and (z2d < z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + -(yd - ys) + (z1d - z1s) + -(z2d - z2s)] : 
+                (xd < xs) and (yd < ys) and (z1d >= z1s) and (z2d < z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + (yd - ys) + (z1d - z1s) + -(z2d - z2s)] : 
+                (xd < xs) and (yd >= ys) and (z1d >= z1s) and (z2d < z2s); 
+            
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + (yd - ys) + -(z1d - z1s) + (z2d - z2s)] : 
+                (xd < xs) and (yd >= ys) and (z1d < z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + -(yd - ys) + (z1d - z1s) + -(z2d - z2s)] : 
+                (xd >= xs) and (yd < ys) and (z1d >= z1s) and (z2d < z2s) 
+        }
+    expected:
+        latency: "{ [28] }"
