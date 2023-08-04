@@ -9,7 +9,8 @@
 #include <isl/ilp.h>
 // Includes ISL maps/binary relations.
 #include <isl/map.h>
-// Includes ISL spaces.
+// Includes ISL ids and dspaces.
+#include <isl/id.h>
 #include <isl/space.h>
 
 std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_map *dist_func);

@@ -220,34 +220,81 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
     // Creates a new isl context.
     isl_ctx *p_ctx = isl_ctx_alloc();
 
-    // Creates a new isl space.
+    /* Creates isl_ids for the src and dst dimensions. This is to be used for 
+     * the space as unique identifiers. */
+    std::vector<isl_id*> src_ids;
+    std::vector<isl_id*> dst_ids;
+    for (int i = 0; i < src_dims.size(); i++)
+    {
+        src_ids.push_back(
+            isl_id_alloc(
+                p_ctx,
+                src_dims[i].c_str(),
+                nullptr
+            )
+        );
+        dst_ids.push_back(
+            isl_id_alloc(
+                p_ctx,
+                dst_dims[i].c_str(),
+                nullptr
+            )
+        );
+    }
+
+    // Programmatically binds the dst and src dimensions to the space.
     isl_space *p_space = isl_space_alloc(
         p_ctx,
         0,
         src_dims.size(),
         dst_dims.size()
     );
-
-    // Programmatically binds the dst and src dimensions to the space.
     for (int i = 0; i < src_dims.size(); i++)
     {
-        p_space = isl_space_set_dim_name(
+        p_space = isl_space_set_dim_id(
             p_space,
             isl_dim_in,
             i,
-            src_dims[i].c_str()
+            isl_id_copy(src_ids[i])
         );
-
-        p_space = isl_space_set_dim_name(
+        p_space = isl_space_set_dim_id(
             p_space,
             isl_dim_out,
             i,
-            dst_dims[i].c_str()
+            isl_id_copy(dst_ids[i])
         );
     }
 
-    // Prints out the space.
-    isl_space_dump(p_space);
+    // Makes p_space into a local space.
+    isl_local_space *p_local_space = isl_local_space_from_space(p_space);
+
+    // Creates x=x affines for the src and dst dimensions.
+    std::vector<isl_aff*> src_affs;
+    std::vector<isl_aff*> dst_affs;
+    for (int i = 0; i < src_dims.size(); i++)
+    {
+        src_affs.push_back(
+            isl_aff_var_on_domain(
+                isl_local_space_copy(p_local_space),
+                isl_dim_in,
+                i
+            )
+        );
+        dst_affs.push_back(
+            isl_aff_var_on_domain(
+                isl_local_space_copy(p_local_space),
+                isl_dim_out,
+                i
+            )
+        );
+    }
+
+    // Prints out the affines.
+    for (int i = 0; i < src_affs.size(); i++)
+    {
+        isl_aff_dump(src_affs[i]);
+        isl_aff_dump(dst_affs[i]);
+    }
 
     return "Manhattan Scaffolding...\n"
     "          __  __                                             \n"
