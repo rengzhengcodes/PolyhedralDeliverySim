@@ -2,12 +2,15 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 // Includes ISL affine list/piecewise functions.
 #include <isl/aff.h>
 #include <isl/ilp.h>
 // Includes ISL maps/binary relations.
 #include <isl/map.h>
+// Includes ISL spaces.
+#include <isl/space.h>
 
 std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_map *dist_func);
 std::string analyze_latency(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func);
@@ -16,6 +19,9 @@ std::string analyze_latency(const std::string& src_occupancy, const std::string&
 #include <string.h>
 bool islIntermediates = (getenv("ISL_INTERMEDIATES") != NULL) &&
                         (strcmp(getenv("ISL_INTERMEDIATES"), "0") != 0);
+
+// Defines a function to programatically generate an n-dimensional Manhattan distance function.
+std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<std::string> dst_dims);
 
 // Defines debug dump function.
 void dump(std::string str, isl_map *map)

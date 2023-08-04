@@ -18,6 +18,14 @@ int main(int argc, char* argv[])
             "xd >= xs and yd < ys"
     "}";
 
+    // Defines the vector inputs for the n-dimensional manhattan metric.
+    std::vector<std::string> src_dims = {"xs", "ys"};
+    std::vector<std::string> dst_dims = {"xd", "yd"};
+
+    // Calls the Manhattan metric function.
+    std::string manhattan_metric_proto = nd_manhattan_metric(src_dims, dst_dims);
+    std::cout << manhattan_metric_proto << std::endl;
+
   
     std::string result = analyze_latency(src_occupancy, dst_fill, manhattan_metric);
     std::cout << result << std::endl;
@@ -194,4 +202,54 @@ std::string analyze_latency (
     isl_ctx_free(p_ctx);
 
     return result;
+}
+
+/**
+ * Defines the n-dimensional Manhattan distance function. This is done programatically
+ * as ISL does not have an absolute value function.
+ * 
+ * @pre             src_dims.size() == dst_dims.size()
+ * 
+ * @param src_dims  A vector of strings representing the source dimensions.
+ * @param dst_dims  A vector of strings representing the destination dimensions.
+ * 
+ * @return          A piecewise affine function string representing the Manhattan distance.
+ */
+std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<std::string> dst_dims)
+{
+    // Creates a new isl context.
+    isl_ctx *p_ctx = isl_ctx_alloc();
+
+    // Creates a new isl space.
+    isl_space *p_space = isl_space_alloc(
+        p_ctx,
+        0,
+        src_dims.size(),
+        dst_dims.size()
+    );
+
+    // Programmatically binds the dst and src dimensions to the space.
+    for (int i = 0; i < src_dims.size(); i++)
+    {
+        p_space = isl_space_set_dim_name(
+            p_space,
+            isl_dim_in,
+            i,
+            src_dims[i].c_str()
+        );
+    }
+
+    return "Manhattan Scaffolding...\n"
+    "          __  __                                             \n"
+    "         |. ||. |    .|                                      \n"
+    "         || ||| |    | |                W                    \n"
+    "         |: ||: |    |'|               [ ]         ._____    \n"
+    "         |  ||  |   |  |     .--'|      3   .---\"| |.   |'   \n"
+    "     _   |  ||  |-. |  | __  |.  |     /|  _|__  | ||   |__  \n"
+    "  .-'|  _|  ||  | ||   '-  | ||    \\|// / |   |' | |    | |' \n"
+    "  |' | |.|  ||  | ||       '-'    -( )-|  |   |  | |    | |  \n"
+    "__|  '-' '  ''  ' ""       '       J V |  `   -  |_'    ' |__\n"
+    "                             ___  '    /                     \n"
+    "                             \\  \\/    |                      \n"
+    "Hilsen, Peer W Hansen--                                      \n";
 }
