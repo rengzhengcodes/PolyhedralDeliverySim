@@ -237,7 +237,17 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
             i,
             src_dims[i].c_str()
         );
+
+        p_space = isl_space_set_dim_name(
+            p_space,
+            isl_dim_out,
+            i,
+            dst_dims[i].c_str()
+        );
     }
+
+    // Prints out the space.
+    isl_space_dump(p_space);
 
     return "Manhattan Scaffolding...\n"
     "          __  __                                             \n"
