@@ -253,13 +253,13 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
     {
         p_space = isl_space_set_dim_id(
             p_space,
-            isl_dim_in,
+            isl_dim_out,
             i,
             isl_id_copy(src_ids[i])
         );
         p_space = isl_space_set_dim_id(
             p_space,
-            isl_dim_out,
+            isl_dim_in,
             i,
             isl_id_copy(dst_ids[i])
         );
@@ -267,25 +267,30 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
 
     // Makes p_space into a local space.
     isl_local_space *p_local_space = isl_local_space_from_space(p_space);
+    // Dumps the local space.
+    isl_local_space_dump(p_local_space);
 
     // Creates x=x affines for the src and dst dimensions.
-    std::vector<isl_aff*> src_affs;
-    std::vector<isl_aff*> dst_affs;
+    std::vector<isl_aff*> src_affs = {};
+    std::vector<isl_aff*> dst_affs = {};
     for (int i = 0; i < src_dims.size(); i++)
     {
+        isl_aff *p_src_aff = isl_aff_var_on_domain(
+            isl_local_space_copy(p_local_space),
+            isl_dim_out,
+            i
+        );
         src_affs.push_back(
-            isl_aff_var_on_domain(
-                isl_local_space_copy(p_local_space),
-                isl_dim_in,
-                i
-            )
+            p_src_aff
+        );
+        
+        isl_aff *p_dst_aff = isl_aff_var_on_domain(
+            isl_local_space_copy(p_local_space),
+            isl_dim_in,
+            i
         );
         dst_affs.push_back(
-            isl_aff_var_on_domain(
-                isl_local_space_copy(p_local_space),
-                isl_dim_out,
-                i
-            )
+            p_dst_aff
         );
     }
 
