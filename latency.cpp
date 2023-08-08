@@ -18,64 +18,7 @@ int main(int argc, char* argv[])
     // Defines the torus circumference.
     int torus_circumference = 8;
     // Defines the distance function string.
-    std::string dist_func_str = R"DIST_FUNC({
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [(xd - xs) + (yd - ys) + (z1d - z1s) + (z2d - z2s)] : 
-                (xd >= xs) and (yd >= ys) and (z1d >= z1s) and (z2d >= z2s); 
-
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [-(xd - xs) + (yd - ys) + (z1d - z1s) + (z2d - z2s)] : 
-                (xd < xs) and (yd >= ys) and (z1d >= z1s) and (z2d >= z2s); 
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [-(xd - xs) + -(yd - ys) + (z1d - z1s) + (z2d - z2s)] : 
-                (xd < xs) and (yd < ys) and (z1d >= z1s) and (z2d >= z2s); 
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [-(xd - xs) + -(yd - ys) + -(z1d - z1s) + (z2d - z2s)] : 
-                (xd < xs) and (yd < ys) and (z1d < z1s) and (z2d >= z2s); 
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [-(xd - xs) + -(yd - ys) + -(z1d - z1s) + -(z2d - z2s)] : 
-                (xd < xs) and (yd < ys) and (z1d < z1s) and (z2d < z2s); 
-            
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [(xd - xs) + -(yd - ys) + (z1d - z1s) + (z2d - z2s)] : 
-                (xd >= xs) and (yd < ys) and (z1d >= z1s) and (z2d >= z2s); 
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [(xd - xs) + -(yd - ys) + -(z1d - z1s) + (z2d - z2s)] : 
-                (xd >= xs) and (yd < ys) and (z1d < z1s) and (z2d >= z2s); 
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [(xd - xs) + -(yd - ys) + -(z1d - z1s) + -(z2d - z2s)] : 
-                (xd >= xs) and (yd < ys) and (z1d < z1s) and (z2d < z2s); 
-            
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [(xd - xs) + (yd - ys) + -(z1d - z1s) + (z2d - z2s)] : 
-                (xd >= xs) and (yd >= ys) and (z1d < z1s) and (z2d >= z2s); 
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [(xd - xs) + (yd - ys) + -(z1d - z1s) + -(z2d - z2s)] : 
-                (xd >= xs) and (yd >= ys) and (z1d < z1s) and (z2d < z2s); 
-            
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [(xd - xs) + (yd - ys) + (z1d - z1s) + -(z2d - z2s)] : 
-                (xd >= xs) and (yd >= ys) and (z1d >= z1s) and (z2d < z2s); 
-
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [-(xd - xs) + (yd - ys) + -(z1d - z1s) + -(z2d - z2s)] : 
-                (xd < xs) and (yd >= ys) and (z1d < z1s) and (z2d < z2s); 
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [-(xd - xs) + -(yd - ys) + (z1d - z1s) + -(z2d - z2s)] : 
-                (xd < xs) and (yd < ys) and (z1d >= z1s) and (z2d < z2s); 
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [-(xd - xs) + (yd - ys) + (z1d - z1s) + -(z2d - z2s)] : 
-                (xd < xs) and (yd >= ys) and (z1d >= z1s) and (z2d < z2s); 
-            
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [-(xd - xs) + (yd - ys) + -(z1d - z1s) + (z2d - z2s)] : 
-                (xd < xs) and (yd >= ys) and (z1d < z1s) and (z2d >= z2s); 
-            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
-            [(xd - xs) + -(yd - ys) + (z1d - z1s) + -(z2d - z2s)] : 
-                (xd >= xs) and (yd < ys) and (z1d >= z1s) and (z2d < z2s) 
-        })DIST_FUNC";
-
-    std::cout << dist_func_str << std::endl;
+    std::string dist_func_str = nd_manhattan_metric({"xs", "ys", "z1s", "z2s"}, {"xd", "yd", "z1d", "z2d"});
   
     std::string result = analyze_latency(src_occupancy, dst_fill, dist_func_str);
     std::cout << result << std::endl;
@@ -241,47 +184,50 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
         p_dist_space = isl_space_set_dim_id(p_dist_space, isl_dim_in, i, dst_ids[i]);
         p_dist_space = isl_space_set_dim_id(p_dist_space, isl_dim_out, i, src_ids[i]);
     }
+    // Clears the vectors, as their contents are now freed.
+    src_ids.clear();
+    dst_ids.clear();
     // Wraps the space into a set space.
     p_dist_space = isl_space_wrap(p_dist_space);
     // Converts it into a local space.
     isl_local_space *p_dist_local = isl_local_space_from_space(p_dist_space);
 
-    // Vector of all the affines for each part of the piecewise function.
-    std::vector<isl_aff*> affs;
+    // Total Manhattan distance affine function.
+    isl_pw_aff *nd_manhattan_metric = isl_pw_aff_zero_on_domain(
+        isl_local_space_copy(p_dist_local)
+    );
     // Constructs all the absolute value affines per dimension.
-    for (int i = 0; i < src_dims.size(); i++)
+    for (int i = 0; i < dst_dims.size(); i++)
     {
         // Constructs the affine for the src.
-        isl_aff *s_aff = isl_aff_var_on_domain(
-            isl_local_space_from_space(p_dist_space),
-            isl_dim_in,
-            i
+        isl_pw_aff *src_aff = isl_pw_aff_var_on_domain(
+            isl_local_space_copy(p_dist_local), isl_dim_set, dst_dims.size() + i
         );
         // Constructs the affine for the dst.
-        isl_aff *d_aff = isl_aff_var_on_domain(
-            isl_local_space_from_space(p_dist_space),
-            isl_dim_in,
-            i
+        isl_pw_aff *dst_aff = isl_pw_aff_var_on_domain(
+            isl_local_space_copy(p_dist_local), isl_dim_set, i
         );
+
         // Subtracts the dst. 
-        isl_aff *p_aff = isl_aff_sub(s_aff, d_aff);
-        isl_aff_dump(p_aff);
+        isl_pw_aff *p_aff = isl_pw_aff_sub(src_aff, dst_aff);
+        // Grabs the negation.
+        isl_pw_aff *p_neg_aff = isl_pw_aff_neg(isl_pw_aff_copy(p_aff));
+        // Constructs the affine for the absolute value.
+        isl_pw_aff *p_abs_aff = isl_pw_aff_max(p_aff, p_neg_aff);
+
+        // Adds the absolute value affine to the vector.
+        nd_manhattan_metric = isl_pw_aff_add(nd_manhattan_metric, p_abs_aff);
     }
 
+    // Grabs the return value as a string.
+    std::string ret = isl_pw_aff_to_str(nd_manhattan_metric);
 
-    return "Manhattan Scaffolding...\n"
-    "          __  __                                             \n"
-    "         |. ||. |    .|                                      \n"
-    "         || ||| |    | |                W                    \n"
-    "         |: ||: |    |'|               [ ]         ._____    \n"
-    "         |  ||  |   |  |     .--'|      3   .---\"| |.   |'   \n"
-    "     _   |  ||  |-. |  | __  |.  |     /|  _|__  | ||   |__  \n"
-    "  .-'|  _|  ||  | ||   '-  | ||    \\|// / |   |' | |    | |' \n"
-    "  |' | |.|  ||  | ||       '-'    -( )-|  |   |  | |    | |  \n"
-    "__|  '-' '  ''  ' ""       '       J V |  `   -  |_'    ' |__\n"
-    "                             ___  '    /                     \n"
-    "                             \\  \\/    |                      \n"
-    "Hilsen, Peer W Hansen--                                      \n";
+    // Frees the isl objects.
+    isl_local_space_free(p_dist_local);
+    isl_pw_aff_free(nd_manhattan_metric);
+    isl_ctx_free(p_ctx);
+
+    return ret;
 }
 
 /**
