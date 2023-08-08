@@ -166,27 +166,20 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
     // Creates a new isl context.
     isl_ctx *p_ctx = isl_ctx_alloc();
 
-    /* Creates isl_ids for the src and dst dimensions. This is to be used for 
-     * the map as unique identifiers. */
-    std::vector<isl_id*> src_ids;
-    std::vector<isl_id*> dst_ids;
-    for (int i = 0; i < src_dims.size(); i++)
-    {
-        src_ids.push_back(isl_id_alloc(p_ctx, src_dims[i].c_str(), NULL));
-        dst_ids.push_back(isl_id_alloc(p_ctx, dst_dims[i].c_str(), NULL));
-    }
+    
 
     // Allocates computer memory for the isl space where dist calculations are done.
     isl_space *p_dist_space = isl_space_alloc(p_ctx, 0, dst_dims.size(), src_dims.size());
-    // Programmatically binds the dst and src dimensions to the dist space.
+    // Programmatically creates and binds the dst and src dimensions to the dist space.
     for (int i = 0; i < src_dims.size(); i++)
     {
-        p_dist_space = isl_space_set_dim_id(p_dist_space, isl_dim_in, i, dst_ids[i]);
-        p_dist_space = isl_space_set_dim_id(p_dist_space, isl_dim_out, i, src_ids[i]);
+        p_dist_space = isl_space_set_dim_id(
+            p_dist_space, isl_dim_in, i, isl_id_alloc(p_ctx, dst_dims[i].c_str(), NULL)
+        );
+        p_dist_space = isl_space_set_dim_id(
+            p_dist_space, isl_dim_out, i, isl_id_alloc(p_ctx, src_dims[i].c_str(), NULL)
+        );
     }
-    // Clears the vectors, as their contents are now freed.
-    src_ids.clear();
-    dst_ids.clear();
     // Wraps the space into a set space.
     p_dist_space = isl_space_wrap(p_dist_space);
     // Converts it into a local space.
