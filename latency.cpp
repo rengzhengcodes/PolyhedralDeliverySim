@@ -319,10 +319,8 @@ std::string n_long_ring_metric(long n)
     p_dist_space = isl_space_set_dim_id(p_dist_space, isl_dim_in, 0, dst_id);
     p_dist_space = isl_space_set_dim_id(p_dist_space, isl_dim_out, 0, src_id);
 
-    // Wraps the space into a map.
+    // Wraps the space into a set space.
     p_dist_space = isl_space_wrap(p_dist_space);
-    isl_space_dump(p_dist_space);
-
 
     // Creates p_dist as a local space.
     isl_local_space *p_dist_local = isl_local_space_from_space(p_dist_space);
@@ -347,6 +345,17 @@ std::string n_long_ring_metric(long n)
     isl_pw_aff *p_dist = isl_pw_aff_min(src_sub_dst_mod_n_aff, dst_sub_src_mod_n_aff);
     // Grabs the return value as a string.
     std::string ret = isl_pw_aff_to_str(p_dist);
+
+    // Frees the isl objects.
+    isl_id_free(src_id);
+    isl_id_free(dst_id);
+    isl_space_free(p_dist_space);
+    isl_local_space_free(p_dist_local);
+    // isl_pw_aff_free(src_aff);
+    // isl_pw_aff_free(dst_aff);
+    isl_val_free(p_circumference);
+    isl_pw_aff_free(p_dist);
+    isl_ctx_free(p_ctx);
 
     return ret;
 }
