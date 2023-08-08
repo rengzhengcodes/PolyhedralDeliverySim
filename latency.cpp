@@ -326,8 +326,8 @@ std::string n_long_ring_metric(long n)
     isl_local_space *p_dist_local = isl_local_space_from_space(p_dist_space);
 
     // Creates the src and dst affines.
-    isl_pw_aff *src_aff = isl_pw_aff_var_on_domain(p_dist_local, isl_dim_set, 0);
-    isl_pw_aff *dst_aff = isl_pw_aff_var_on_domain(p_dist_local, isl_dim_set, 1);
+    isl_pw_aff *src_aff = isl_pw_aff_var_on_domain(isl_local_space_copy(p_dist_local), isl_dim_set, 0);
+    isl_pw_aff *dst_aff = isl_pw_aff_var_on_domain(isl_local_space_copy(p_dist_local), isl_dim_set, 1);
 
     // Subtracts the dst from the src.
     isl_pw_aff *src_sub_dst_aff = isl_pw_aff_sub(isl_pw_aff_copy(src_aff), isl_pw_aff_copy(dst_aff));
@@ -347,12 +347,9 @@ std::string n_long_ring_metric(long n)
     std::string ret = isl_pw_aff_to_str(p_dist);
 
     // Frees the isl objects.
-    isl_id_free(src_id);
-    isl_id_free(dst_id);
-    isl_space_free(p_dist_space);
     isl_local_space_free(p_dist_local);
-    // isl_pw_aff_free(src_aff);
-    // isl_pw_aff_free(dst_aff);
+    isl_pw_aff_free(src_aff);
+    isl_pw_aff_free(dst_aff);
     isl_val_free(p_circumference);
     isl_pw_aff_free(p_dist);
     isl_ctx_free(p_ctx);
