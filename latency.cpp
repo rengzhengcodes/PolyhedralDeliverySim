@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
     // Defines the distance function string.
     std::string dist_func_str = n_long_ring_metric(torus_circumference);
   
-    std::string result = analyze_latency(src_occupancy, dst_fill, dist_func_str);
+    long result = analyze_latency(src_occupancy, dst_fill, dist_func_str);
     std::cout << result << std::endl;
 }
 
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
  *                                      the data requested.
  * @param __isl_take dist_func          The distance function to use, as a map.
  */
-std::string analyze_latency (
+long analyze_latency (
     isl_map *p_src_occupancy, 
     isl_map *p_dst_fill, 
     isl_map *dist_func
@@ -78,17 +78,24 @@ std::string analyze_latency (
 
     // Computes the minimum distance from every source to every destination.
     isl_multi_pw_aff *min_distance = isl_map_min_multi_pw_aff(manhattan_distance);
-
     // Computes the maximum of minimum distances for every data.
     isl_multi_val *max_min_distance = isl_multi_pw_aff_max_multi_val(min_distance);
+    // Ensures there's only one value.
+    isl_assert(
+        isl_multi_val_get_ctx(max_min_distance),
+        isl_multi_val_size(max_min_distance) == 1,
+        throw std::length_error("max_min_distance has more than one value.")
+    );
 
-    // Gets the string representation of the maximum minimum distance.
-    std::string result = isl_multi_val_to_str(max_min_distance);
+    // Gets the long representation of the maximum minimum distance.
+    isl_val *result = isl_multi_val_get_at(max_min_distance, 0);
+    long ret = isl_val_get_num_si(result);
 
     // Frees the isl objects.
     isl_multi_val_free(max_min_distance);
+    isl_val_free(result);
 
-    return result;
+    return ret;
 }
 
 /**
@@ -102,7 +109,7 @@ std::string analyze_latency (
  *
  * @return                  A string representation of the maximum latency.
  */
-std::string analyze_latency (
+long analyze_latency (
     const std::string& src_occupancy, 
     const std::string& dst_fill, 
     const std::string& dist_func
@@ -130,7 +137,7 @@ std::string analyze_latency (
     );
 
     // Calls the isl version of analyze_latency.
-    std::string result = analyze_latency(
+    long ret = analyze_latency(
         p_src_occupancy,
         p_dst_fill,
         p_dist_func_map
@@ -139,7 +146,7 @@ std::string analyze_latency (
     // Frees the isl objects.
     isl_ctx_free(p_ctx);
 
-    return result;
+    return ret;
 }
 
 /**

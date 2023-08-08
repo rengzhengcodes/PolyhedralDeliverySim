@@ -12,9 +12,11 @@
 // Includes ISL ids and dspaces.
 #include <isl/id.h>
 #include <isl/space.h>
+// Imports ISL val.
+#include <isl/val.h>
 
-std::string analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_map *dist_func);
-std::string analyze_latency(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func);
+long analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_map *dist_func);
+long analyze_latency(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func);
 
 // Defines debug variables from environment variables.
 #include <string.h>
