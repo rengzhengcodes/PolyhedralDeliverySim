@@ -17,6 +17,10 @@ int main(int argc, char* argv[])
     // Defines the vector inputs for the n-dimensional manhattan metric.
     std::vector<std::string> src_dims = {"xs", "ys"};
     std::vector<std::string> dst_dims = {"xd", "yd"};
+
+    // Defines the torus circumference.
+    int torus_circumference = 8;
+    std::cout << n_long_ring_metric(torus_circumference) << std::endl;
   
     std::string result = analyze_latency(src_occupancy, dst_fill, manhattan_metric);
     std::cout << result << std::endl;
@@ -299,4 +303,42 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
     "                             ___  '    /                     \n"
     "                             \\  \\/    |                      \n"
     "Hilsen, Peer W Hansen--                                      \n";
+}
+
+/**
+ * Calculates the latency of a memory access on a ring.
+ * 
+ * @param torus_circumference   The circumference of the torus. 
+ */
+std::string n_long_ring_metric(int torus_circumference)
+{
+    // Creates a new isl context.
+    isl_ctx *p_ctx = isl_ctx_alloc();
+
+    /* Creates isl_ids for the src and dst dimensions. This is to be used for
+     * the map as unique identifiers. */
+    isl_id *src_id = isl_id_alloc(p_ctx, "src", NULL);
+    isl_id *dst_id = isl_id_alloc(p_ctx, "dst", NULL);
+
+    // Creates the space in which distance calculations are done.
+    isl_space *p_dist = isl_space_set_alloc(p_ctx, 0, 2);
+    
+    // Sets the dst and src as members of the space.
+    p_dist = isl_space_set_dim_id(p_dist, isl_dim_set, 0, dst_id);
+    p_dist = isl_space_set_dim_id(p_dist, isl_dim_set, 1, src_id);
+
+    // Creates p_dist as a local space.
+    isl_local_space *p_dist_local = isl_local_space_from_space(p_dist);
+
+    // Creates the src and dst affines.
+    isl_aff *src_aff = isl_aff_var_on_domain(p_dist_local, isl_dim_set, 1);
+    isl_aff *dst_aff = isl_aff_var_on_domain(p_dist_local, isl_dim_set, 0);
+    isl_aff_dump(src_aff);
+    isl_aff_dump(dst_aff);
+
+    // Subtracts the src from the dst.
+    isl_aff *dist_aff = isl_aff_sub(src_aff, dst_aff);
+
+    isl_aff_dump(dist_aff);
+    return "hello";
 }
