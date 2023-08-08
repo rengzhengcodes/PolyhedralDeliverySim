@@ -140,12 +140,17 @@
         latency: "{ [28] }"
 -   p_src: "{ [xs] -> [d0] : 0 <= d0 < 8 and xs = 0 }"
     p_dst: "{ [xd] -> [d0] : d0 = xd and 0 <= xd < 8 }"
-    p_dist: &ring_dist |
+    p_dist: &ring_dist_size_8 |
         { 
             [[xd] -> [xs]] -> [(xd-xs) % 8] : 
                 (xd-xs)%8 <= (xs-xd)%8;
             [[xd] -> [xs]] -> [(xs-xd) % 8] : 
                 (xd-xs)%8 > (xs-xd)%8
         }
+    expected:
+        latency: "{ [4] }"
+-   p_src: "{ [xs] -> [d0] : 0 <= xs < 8 and d0 = xs }"
+    p_dst: "{ [xd] -> [d0] : 0 <= d0 < 8 and xd = 0 }"
+    p_dist: *ring_dist_size_8
     expected:
         latency: "{ [4] }"
