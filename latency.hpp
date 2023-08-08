@@ -24,7 +24,7 @@ bool islIntermediates = (getenv("ISL_INTERMEDIATES") != NULL) &&
 // Defines a function to programatically generate an n-dimensional Manhattan distance function.
 std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<std::string> dst_dims);
 // Defines a function to programatically generate an n-circumference ring distance function.
-std::string n_long_ring_metric(int torus_circumference);
+std::string n_long_ring_metric(long ring_circumference);
 
 // Defines debug dump function.
 void dump(std::string str, isl_map *map)

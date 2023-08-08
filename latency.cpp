@@ -6,23 +6,15 @@ int main(int argc, char* argv[])
     std::string src_occupancy = "{ [xs] -> [d0] : 0 <= xs < 8 and d0 = xs }";
     // Defines the dst fill map as a string.
     std::string dst_fill = "{ [xd] -> [d0] : 0 <= d0 < 8 and xd = 0 }";
-    // Defines the manhattan metric between two 2D points as a string.
-    std::string manhattan_metric = "{" 
-        "[[xd] -> [xs]] -> [(xd-xs) % 8] : "
-            "(xd-xs)%8 <= (xs-xd)%8; "
-        "[[xd] -> [xs]] -> [(xs-xd) % 8] : "
-            "(xd-xs)%8 > (xs-xd)%8"
-        "}";
-
-    // Defines the vector inputs for the n-dimensional manhattan metric.
-    std::vector<std::string> src_dims = {"xs", "ys"};
-    std::vector<std::string> dst_dims = {"xd", "yd"};
 
     // Defines the torus circumference.
     int torus_circumference = 8;
-    std::cout << n_long_ring_metric(torus_circumference) << std::endl;
+    // Defines the distance function string.
+    std::string dist_func_str = n_long_ring_metric(torus_circumference);
+
+    std::cout << dist_func_str << std::endl;
   
-    std::string result = analyze_latency(src_occupancy, dst_fill, manhattan_metric);
+    std::string result = analyze_latency(src_occupancy, dst_fill, dist_func_str);
     std::cout << result << std::endl;
 }
 
@@ -308,9 +300,9 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
 /**
  * Calculates the latency of a memory access on a ring.
  * 
- * @param torus_circumference   The circumference of the torus. 
+ * @param n   The circumference of the torus. 
  */
-std::string n_long_ring_metric(int torus_circumference)
+std::string n_long_ring_metric(long n)
 {
     // Creates a new isl context.
     isl_ctx *p_ctx = isl_ctx_alloc();
@@ -321,24 +313,35 @@ std::string n_long_ring_metric(int torus_circumference)
     isl_id *dst_id = isl_id_alloc(p_ctx, "dst", NULL);
 
     // Creates the space in which distance calculations are done.
-    isl_space *p_dist = isl_space_set_alloc(p_ctx, 0, 2);
+    isl_space *p_dist_space = isl_space_set_alloc(p_ctx, 0, 2);
     
     // Sets the dst and src as members of the space.
-    p_dist = isl_space_set_dim_id(p_dist, isl_dim_set, 0, dst_id);
-    p_dist = isl_space_set_dim_id(p_dist, isl_dim_set, 1, src_id);
+    p_dist_space = isl_space_set_dim_id(isl_space_copy(p_dist_space), isl_dim_set, 0, dst_id);
+    p_dist_space = isl_space_set_dim_id(isl_space_copy(p_dist_space), isl_dim_set, 1, src_id);
 
     // Creates p_dist as a local space.
-    isl_local_space *p_dist_local = isl_local_space_from_space(p_dist);
+    isl_local_space *p_dist_local = isl_local_space_from_space(p_dist_space);
 
     // Creates the src and dst affines.
-    isl_aff *src_aff = isl_aff_var_on_domain(p_dist_local, isl_dim_set, 1);
-    isl_aff *dst_aff = isl_aff_var_on_domain(p_dist_local, isl_dim_set, 0);
-    isl_aff_dump(src_aff);
-    isl_aff_dump(dst_aff);
+    isl_pw_aff *src_aff = isl_pw_aff_var_on_domain(isl_local_space_copy(p_dist_local), isl_dim_set, 1);
+    isl_pw_aff *dst_aff = isl_pw_aff_var_on_domain(isl_local_space_copy(p_dist_local), isl_dim_set, 0);
 
+    // Subtracts the dst from the src.
+    isl_pw_aff *src_sub_dst_aff = isl_pw_aff_sub(isl_pw_aff_copy(src_aff), isl_pw_aff_copy(dst_aff));
     // Subtracts the src from the dst.
-    isl_aff *dist_aff = isl_aff_sub(src_aff, dst_aff);
+    isl_pw_aff *dst_sub_src_aff = isl_pw_aff_sub(isl_pw_aff_copy(dst_aff), isl_pw_aff_copy(src_aff));
 
-    isl_aff_dump(dist_aff);
-    return "hello";
+    // Creates an isl_val for the torus circumference.
+    isl_val *p_circumference = isl_val_int_from_si(p_ctx, n);
+
+    // Creates the moduli for both differences.
+    isl_pw_aff *src_sub_dst_mod_n_aff = isl_pw_aff_mod_val(src_sub_dst_aff, isl_val_copy(p_circumference));
+    isl_pw_aff *dst_sub_src_mod_n_aff = isl_pw_aff_mod_val(dst_sub_src_aff, isl_val_copy(p_circumference));
+
+    // Combines the moduli into a single piecewise affine.
+    isl_pw_aff *p_dist = isl_pw_aff_min(src_sub_dst_mod_n_aff, dst_sub_src_mod_n_aff);
+    // Grabs the return value as a string.
+    std::string ret = isl_pw_aff_to_str(p_dist);
+
+    return ret;
 }
