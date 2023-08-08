@@ -12,22 +12,22 @@
                 xd >= xs and yd < ys
         }
     expected:
-        latency: "{ [7] }"
+        latency: 7
 -   p_src: "{ [xs, ys] -> [d0, d1] : d0 = xs and 0 <= d1 < 8 and 0 <= xs < 8 and 0 <= ys < 8 }"
     p_dst: "{ [xd, yd] -> [d0, d1] : d0 = xd and d1 = yd and 0 <= xd < 8 and 0 <= yd < 8 }"
     p_dist: *2d_manhattan_dist
     expected:
-        latency: "{ [0] }"
+        latency: 0
 -   p_src: "{ [xs, ys] -> [d0, d1] : 0 <= d0 < 8 and 0 <= d1 < 8 and (xs=0 or 3<=xs<=4 or xs=7) and (ys=0 or 3<=ys<=4 or ys=7) }"
     p_dst: "{ [xd, yd] -> [d0, d1] : d0 = xd and d1 = yd and 0 <= xd < 8 and 0 <= yd < 8 }"
     p_dist: *2d_manhattan_dist
     expected:
-        latency: "{ [2] }"
+        latency: 2
 -   p_src: "{ [xs, ys] -> [d0, d1] : d0 = xs and d1 = ys and 0 <= xs < 8 and 0 <= ys < 8 }"
     p_dst: "{ [xd, yd] -> [d0, d1] : 0 <= d0 < 8 and 0 <= d1 < 8 and (xd=0 or 3<=xd<=4 or xd=7) and (yd=0 or 3<=yd<=4 or yd=7) }"
     p_dist: *2d_manhattan_dist
     expected:
-        latency: "{ [14] }"
+        latency: 14
 -   p_src: | 
         { [xs, ys] -> [d0, d1] : 
             0 <= d0 < 3 and 0 <= d1 < 3 and 
@@ -36,7 +36,7 @@
     p_dst: "{ [xd, yd] -> [d0, d1] : d0 = xd % 3 and d1 = yd % 3 and 0 <= xd < 9 and 0 <= yd < 9 }"
     p_dist: *2d_manhattan_dist
     expected:
-        latency: "{ [2] }"
+        latency: 2
 -   p_src: "{ [xs, ys] -> [d0, d1] : d0 = xs % 3 and d1 = ys % 3 and 0 <= xs < 9 and 0 <= ys < 9}"
     p_dst: |
         { [xd, yd] -> [d0, d1] : 
@@ -45,17 +45,17 @@
         }
     p_dist: *2d_manhattan_dist
     expected:
-        latency: "{ [2] }"
+        latency: 2
 -   p_src: "{ [xs, ys] -> [d0] : d0=xs and 0 <= xs < 8 and ys = 0}"
     p_dst: "{ [xd, yd] -> [d0] : d0=xd and 0 <= xd < 8 and 0 <= yd < 8 }"
     p_dist: *2d_manhattan_dist
     expected:
-        latency: "{ [7] }"
+        latency: 7
 -   p_src: "{ [xs, ys] -> [d0] : d0=xs and 0 <= xs < 8 and 0 <= ys < 8 }"
     p_dst: "{ [xd, yd] -> [d0] : d0=xd and 0 <= xd < 8 and yd = 0 }"
     p_dist: *2d_manhattan_dist
     expected:
-        latency: "{ [0] }"
+        latency: 0
 -   p_src: |
         { [xs, ys, z1s, z2s] -> [d0, d1, d2, d3] : 
             d0 = xs and d1 = ys and d2 = z1s and d3 = z2s and 
@@ -124,7 +124,7 @@
                 (xd >= xs) and (yd < ys) and (z1d >= z1s) and (z2d < z2s) 
         }
     expected:
-        latency: "{ [28] }"
+        latency: 28
 -   p_src: |
         { [xs, ys, z1s, z2s] -> [d0, d1, d2, d3] :
             0 <= d0 < 8 and 0 <= d1 < 8 and 0 <= d2 < 8 and 0 <= d3 < 8 and 
@@ -137,7 +137,7 @@
         }
     p_dist: *4d_manhattan_dist
     expected:
-        latency: "{ [28] }"
+        latency: 28
 -   p_src: "{ [xs] -> [d0] : 0 <= d0 < 8 and xs = 0 }"
     p_dst: "{ [xd] -> [d0] : d0 = xd and 0 <= xd < 8 }"
     p_dist: &ring_dist_size_8 |
@@ -148,14 +148,14 @@
                 (xd-xs)%8 > (xs-xd)%8
         }
     expected:
-        latency: "{ [4] }"
+        latency: 4
 -   p_src: "{ [xs] -> [d0] : 0 <= xs < 8 and d0 = xs }"
     p_dst: "{ [xd] -> [d0] : 0 <= d0 < 8 and xd = 0 }"
     p_dist: *ring_dist_size_8
     expected:
-        latency: "{ [4] }"
+        latency: 4
 -   p_src: "{ [xs] -> [d0] : xs <= d0 <= xs + 1 and xs % 2 = 0}"
     p_dst: "{ [xd] -> [d0] : d0 = xd and 0 <= xd < 8 }"
     p_dist: *ring_dist_size_8
     expected:
-        latency: "{ [1] }"
+        latency: 1
