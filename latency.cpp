@@ -166,10 +166,9 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
     // Creates a new isl context.
     isl_ctx *p_ctx = isl_ctx_alloc();
 
-    
-
     // Allocates computer memory for the isl space where dist calculations are done.
     isl_space *p_dist_space = isl_space_alloc(p_ctx, 0, dst_dims.size(), src_dims.size());
+
     // Programmatically creates and binds the dst and src dimensions to the dist space.
     for (int i = 0; i < src_dims.size(); i++)
     {
@@ -180,6 +179,7 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
             p_dist_space, isl_dim_out, i, isl_id_alloc(p_ctx, src_dims[i].c_str(), NULL)
         );
     }
+
     // Wraps the space into a set space.
     p_dist_space = isl_space_wrap(p_dist_space);
     // Converts it into a local space.
@@ -189,7 +189,7 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
     isl_pw_aff *nd_manhattan_metric = isl_pw_aff_zero_on_domain(
         isl_local_space_copy(p_dist_local)
     );
-    // Constructs all the absolute value affines per dimension.
+    // Constructs all the absolute value affines per dimension and adds to metric.
     for (int i = 0; i < dst_dims.size(); i++)
     {
         // Constructs the affine for the src.
