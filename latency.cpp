@@ -3,14 +3,77 @@
 int main(int argc, char* argv[])
 {
     // Defines the src occupancy map as a string.
-    std::string src_occupancy = "{ [xs] -> [d0] : 0 <= xs < 8 and d0 = xs }";
+    std::string src_occupancy = R"SRC(
+        { [xs, ys, z1s, z2s] -> [d0, d1, d2, d3] : 
+            d0 = xs and d1 = ys and d2 = z1s and d3 = z2s and 
+            0 <= xs < 8 and 0 <= ys < 8 and 0 <= z1s < 8 and 0 <= z2s < 8
+        })SRC";
     // Defines the dst fill map as a string.
-    std::string dst_fill = "{ [xd] -> [d0] : 0 <= d0 < 8 and xd = 0 }";
+    std::string dst_fill = R"DST(
+        { [xd, yd, z1d, z2d] -> [d0, d1, d2, d3] :
+            0 <= d0 < 8 and 0 <= d1 < 8 and 0 <= d2 < 8 and 0 <= d3 < 8 and 
+            xd=0 and yd=0 and z1d=0 and z2d=0
+        })DST";
 
     // Defines the torus circumference.
     int torus_circumference = 8;
     // Defines the distance function string.
-    std::string dist_func_str = n_long_ring_metric(torus_circumference);
+    std::string dist_func_str = R"DIST_FUNC({
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + (yd - ys) + (z1d - z1s) + (z2d - z2s)] : 
+                (xd >= xs) and (yd >= ys) and (z1d >= z1s) and (z2d >= z2s); 
+
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + (yd - ys) + (z1d - z1s) + (z2d - z2s)] : 
+                (xd < xs) and (yd >= ys) and (z1d >= z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + -(yd - ys) + (z1d - z1s) + (z2d - z2s)] : 
+                (xd < xs) and (yd < ys) and (z1d >= z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + -(yd - ys) + -(z1d - z1s) + (z2d - z2s)] : 
+                (xd < xs) and (yd < ys) and (z1d < z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + -(yd - ys) + -(z1d - z1s) + -(z2d - z2s)] : 
+                (xd < xs) and (yd < ys) and (z1d < z1s) and (z2d < z2s); 
+            
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + -(yd - ys) + (z1d - z1s) + (z2d - z2s)] : 
+                (xd >= xs) and (yd < ys) and (z1d >= z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + -(yd - ys) + -(z1d - z1s) + (z2d - z2s)] : 
+                (xd >= xs) and (yd < ys) and (z1d < z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + -(yd - ys) + -(z1d - z1s) + -(z2d - z2s)] : 
+                (xd >= xs) and (yd < ys) and (z1d < z1s) and (z2d < z2s); 
+            
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + (yd - ys) + -(z1d - z1s) + (z2d - z2s)] : 
+                (xd >= xs) and (yd >= ys) and (z1d < z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + (yd - ys) + -(z1d - z1s) + -(z2d - z2s)] : 
+                (xd >= xs) and (yd >= ys) and (z1d < z1s) and (z2d < z2s); 
+            
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + (yd - ys) + (z1d - z1s) + -(z2d - z2s)] : 
+                (xd >= xs) and (yd >= ys) and (z1d >= z1s) and (z2d < z2s); 
+
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + (yd - ys) + -(z1d - z1s) + -(z2d - z2s)] : 
+                (xd < xs) and (yd >= ys) and (z1d < z1s) and (z2d < z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + -(yd - ys) + (z1d - z1s) + -(z2d - z2s)] : 
+                (xd < xs) and (yd < ys) and (z1d >= z1s) and (z2d < z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + (yd - ys) + (z1d - z1s) + -(z2d - z2s)] : 
+                (xd < xs) and (yd >= ys) and (z1d >= z1s) and (z2d < z2s); 
+            
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [-(xd - xs) + (yd - ys) + -(z1d - z1s) + (z2d - z2s)] : 
+                (xd < xs) and (yd >= ys) and (z1d < z1s) and (z2d >= z2s); 
+            [[xd, yd, z1d, z2d] -> [xs, ys, z1s, z2s]] -> 
+            [(xd - xs) + -(yd - ys) + (z1d - z1s) + -(z2d - z2s)] : 
+                (xd >= xs) and (yd < ys) and (z1d >= z1s) and (z2d < z2s) 
+        })DIST_FUNC";
 
     std::cout << dist_func_str << std::endl;
   
