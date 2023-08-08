@@ -95,9 +95,9 @@ std::string analyze_latency (
  * A wrapper for analyze_latency that takes in strings instead of isl objects.
  * 
  * @param src_occupancy     A string representation of a map relating source
- *                         location and the data occupied.
+ *                          location and the data occupied.
  * @param dst_fill          A string representation of a map relating destination
- *                         location and the data requested.
+ *                          location and the data requested.
  * @param dist_func         A string representation of a distance function to use.
  *
  * @return                  A string representation of the maximum latency.
@@ -218,7 +218,7 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
 /**
  * Calculates the latency of a memory access on a ring.
  * 
- * @param n   The circumference of the torus. 
+ * @param n     The circumference of the torus. 
  */
 std::string n_long_ring_metric(long n)
 {
