@@ -327,19 +327,19 @@ std::string n_long_ring_metric(long n)
 
     // Creates the src and dst affines.
     isl_pw_aff *src_aff = isl_pw_aff_var_on_domain(isl_local_space_copy(p_dist_local), isl_dim_set, 0);
-    isl_pw_aff *dst_aff = isl_pw_aff_var_on_domain(isl_local_space_copy(p_dist_local), isl_dim_set, 1);
+    isl_pw_aff *dst_aff = isl_pw_aff_var_on_domain(p_dist_local, isl_dim_set, 1);
 
     // Subtracts the dst from the src.
     isl_pw_aff *src_sub_dst_aff = isl_pw_aff_sub(isl_pw_aff_copy(src_aff), isl_pw_aff_copy(dst_aff));
     // Subtracts the src from the dst.
-    isl_pw_aff *dst_sub_src_aff = isl_pw_aff_sub(isl_pw_aff_copy(dst_aff), isl_pw_aff_copy(src_aff));
+    isl_pw_aff *dst_sub_src_aff = isl_pw_aff_sub(dst_aff, src_aff);
 
     // Creates an isl_val for the torus circumference.
     isl_val *p_circumference = isl_val_int_from_si(p_ctx, n);
 
     // Creates the moduli for both differences.
     isl_pw_aff *src_sub_dst_mod_n_aff = isl_pw_aff_mod_val(src_sub_dst_aff, isl_val_copy(p_circumference));
-    isl_pw_aff *dst_sub_src_mod_n_aff = isl_pw_aff_mod_val(dst_sub_src_aff, isl_val_copy(p_circumference));
+    isl_pw_aff *dst_sub_src_mod_n_aff = isl_pw_aff_mod_val(dst_sub_src_aff, p_circumference);
 
     // Combines the moduli into a single piecewise affine.
     isl_pw_aff *p_dist = isl_pw_aff_min(src_sub_dst_mod_n_aff, dst_sub_src_mod_n_aff);
@@ -347,10 +347,6 @@ std::string n_long_ring_metric(long n)
     std::string ret = isl_pw_aff_to_str(p_dist);
 
     // Frees the isl objects.
-    isl_local_space_free(p_dist_local);
-    isl_pw_aff_free(src_aff);
-    isl_pw_aff_free(dst_aff);
-    isl_val_free(p_circumference);
     isl_pw_aff_free(p_dist);
     isl_ctx_free(p_ctx);
 
