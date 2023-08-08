@@ -313,18 +313,23 @@ std::string n_long_ring_metric(long n)
     isl_id *dst_id = isl_id_alloc(p_ctx, "dst", NULL);
 
     // Creates the space in which distance calculations are done.
-    isl_space *p_dist_space = isl_space_set_alloc(p_ctx, 0, 2);
+    isl_space *p_dist_space = isl_space_alloc(p_ctx, 0, 1, 1);
     
     // Sets the dst and src as members of the space.
-    p_dist_space = isl_space_set_dim_id(isl_space_copy(p_dist_space), isl_dim_set, 0, dst_id);
-    p_dist_space = isl_space_set_dim_id(isl_space_copy(p_dist_space), isl_dim_set, 1, src_id);
+    p_dist_space = isl_space_set_dim_id(isl_space_copy(p_dist_space), isl_dim_in, 0, dst_id);
+    p_dist_space = isl_space_set_dim_id(isl_space_copy(p_dist_space), isl_dim_out, 0, src_id);
+
+    // Wraps the space into a map.
+    p_dist_space = isl_space_wrap(p_dist_space);
+    isl_space_dump(p_dist_space);
+
 
     // Creates p_dist as a local space.
     isl_local_space *p_dist_local = isl_local_space_from_space(p_dist_space);
 
     // Creates the src and dst affines.
-    isl_pw_aff *src_aff = isl_pw_aff_var_on_domain(isl_local_space_copy(p_dist_local), isl_dim_set, 1);
-    isl_pw_aff *dst_aff = isl_pw_aff_var_on_domain(isl_local_space_copy(p_dist_local), isl_dim_set, 0);
+    isl_pw_aff *src_aff = isl_pw_aff_var_on_domain(isl_local_space_copy(p_dist_local), isl_dim_set, 0);
+    isl_pw_aff *dst_aff = isl_pw_aff_var_on_domain(isl_local_space_copy(p_dist_local), isl_dim_set, 1);
 
     // Subtracts the dst from the src.
     isl_pw_aff *src_sub_dst_aff = isl_pw_aff_sub(isl_pw_aff_copy(src_aff), isl_pw_aff_copy(dst_aff));
