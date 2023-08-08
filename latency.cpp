@@ -3,29 +3,20 @@
 int main(int argc, char* argv[])
 {
     // Defines the src occupancy map as a string.
-    std::string src_occupancy = "{ [xs, ys] -> [d0, d1] : d0 = xs and d1 = ys and 0 <= xs < 8 and 0 <= ys < 8 }";
+    std::string src_occupancy = "{ [xs] -> [d0] : 0 <= d0 < 8 and xs = 0 }";
     // Defines the dst fill map as a string.
-    std::string dst_fill = "{ [xd, yd] -> [d0, d1] : 0 <= d0 < 8 and 0 <= d1 < 8 and (xd=0 or 3<=xd<=4 or xd=7) and (yd=0 or 3<=yd<=4 or yd=7) }";
+    std::string dst_fill = "{ [xd] -> [d0] : d0 = xd and 0 <= xd < 8 }";
     // Defines the manhattan metric between two 2D points as a string.
-    std::string manhattan_metric = "{"
-        "[[xd, yd] -> [xs, ys]] -> [(xd - xs) + (yd - ys)] : "
-            "xd >= xs and yd >= ys;"
-        "[[xd, yd] -> [xs, ys]] -> [-(xd - xs) + -(yd - ys)] : "
-            "xd < xs and yd < ys;"
-        "[[xd, yd] -> [xs, ys]] -> [-(xd - xs) + (yd - ys)] : "
-            "xd < xs and yd >= ys;"
-        "[[xd, yd] -> [xs, ys]] -> [(xd - xs) + -(yd - ys)] : "
-            "xd >= xs and yd < ys"
-    "}";
+    std::string manhattan_metric = "{" 
+        "[[xd] -> [xs]] -> [(xd-xs) % 8] : "
+            "(xd-xs)%8 <= (xs-xd)%8; "
+        "[[xd] -> [xs]] -> [(xs-xd) % 8] : "
+            "(xd-xs)%8 > (xs-xd)%8"
+        "}";
 
     // Defines the vector inputs for the n-dimensional manhattan metric.
     std::vector<std::string> src_dims = {"xs", "ys"};
     std::vector<std::string> dst_dims = {"xd", "yd"};
-
-    // Calls the Manhattan metric function.
-    std::string manhattan_metric_proto = nd_manhattan_metric(src_dims, dst_dims);
-    std::cout << manhattan_metric_proto << std::endl;
-
   
     std::string result = analyze_latency(src_occupancy, dst_fill, manhattan_metric);
     std::cout << result << std::endl;

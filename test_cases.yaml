@@ -138,3 +138,14 @@
     p_dist: *4d_manhattan_dist
     expected:
         latency: "{ [28] }"
+-   p_src: "{ [xs] -> [d0] : 0 <= d0 < 8 and xs = 0 }"
+    p_dst: "{ [xd] -> [d0] : d0 = xd and 0 <= xd < 8 }"
+    p_dist: &ring_dist |
+        { 
+            [[xd] -> [xs]] -> [(xd-xs) % 8] : 
+                (xd-xs)%8 <= (xs-xd)%8;
+            [[xd] -> [xs]] -> [(xs-xd) % 8] : 
+                (xd-xs)%8 > (xs-xd)%8
+        }
+    expected:
+        latency: "{ [4] }"
