@@ -3,22 +3,14 @@
 int main(int argc, char* argv[])
 {
     // Defines the src occupancy map as a string.
-    std::string src_occupancy = R"SRC(
-        { [xs, ys, z1s, z2s] -> [d0, d1, d2, d3] : 
-            d0 = xs and d1 = ys and d2 = z1s and d3 = z2s and 
-            0 <= xs < 8 and 0 <= ys < 8 and 0 <= z1s < 8 and 0 <= z2s < 8
-        })SRC";
+    std::string src_occupancy = "{ [xs, ys] -> [d0] : d0=xs and 0 <= xs < 8 and ys = 0}";
     // Defines the dst fill map as a string.
-    std::string dst_fill = R"DST(
-        { [xd, yd, z1d, z2d] -> [d0, d1, d2, d3] :
-            0 <= d0 < 8 and 0 <= d1 < 8 and 0 <= d2 < 8 and 0 <= d3 < 8 and 
-            xd=0 and yd=0 and z1d=0 and z2d=0
-        })DST";
+    std::string dst_fill = "{ [xd, yd] -> [d0] : d0=xd and 0 <= xd < 8 and 0 <= yd < 8 }";
 
     // Defines the torus circumference.
     int torus_circumference = 8;
     // Defines the distance function string.
-    std::string dist_func_str = nd_manhattan_metric({"xs", "ys", "z1s", "z2s"}, {"xd", "yd", "z1d", "z2d"});
+    std::string dist_func_str = nd_manhattan_metric({"xs", "ys"}, {"xd", "yd"});
   
     std::string result = analyze_latency(src_occupancy, dst_fill, dist_func_str);
     std::cout << result << std::endl;
@@ -27,8 +19,8 @@ int main(int argc, char* argv[])
 /**
  * Analyzes the latency of a memory access by finding the minimum path from
  * every source to every destination for a particular data, then taking the max
- * of all the minimum paths for that data, then taking the max of all the latencies
- * for all the data.
+ * of all the minimum paths for that data, then taking the max of all the
+ * latencies for all the data.
  * 
  * @param __isl_take p_src_occupancy    A map relating source location and the 
  *                                      data occupied.
