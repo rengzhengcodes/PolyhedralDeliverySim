@@ -221,7 +221,7 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
     isl_ctx *p_ctx = isl_ctx_alloc();
 
     /* Creates isl_ids for the src and dst dimensions. This is to be used for 
-     * the space as unique identifiers. */
+     * the map as unique identifiers. */
     std::vector<isl_id*> src_ids;
     std::vector<isl_id*> dst_ids;
     for (int i = 0; i < src_dims.size(); i++)
@@ -242,29 +242,58 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
         );
     }
 
-    // Programmatically binds the dst and src dimensions to the space.
-    isl_space *p_space = isl_space_alloc(
+    // Programmatically binds the dst and src dimensions to their respective spaces.
+    isl_space *p_in_space = isl_space_alloc(
         p_ctx,
+        dst_dims.size(),
         0,
+        0
+    );
+    isl_space *p_out_space = isl_space_alloc(
+        p_ctx,
         src_dims.size(),
-        dst_dims.size()
+        0,
+        0
     );
     for (int i = 0; i < src_dims.size(); i++)
     {
-        p_space = isl_space_set_dim_id(
-            p_space,
-            isl_dim_out,
-            i,
-            isl_id_copy(src_ids[i])
-        );
-        p_space = isl_space_set_dim_id(
-            p_space,
-            isl_dim_in,
+        p_in_space = isl_space_set_dim_id(
+            p_in_space,
+            isl_dim_param,
             i,
             isl_id_copy(dst_ids[i])
         );
+        p_out_space = isl_space_set_dim_id(
+            p_out_space,
+            isl_dim_param,
+            i,
+            isl_id_copy(src_ids[i])
+        );
     }
-    isl_space_dump(p_space);
+    isl_space_dump(p_in_space);
+
+    // Vector of all the affines for each part of the piecewise function.
+    std::vector<isl_aff*> affs;
+    // Constructs all the absolute value affines per dimension.
+    for (int i = 0; i < src_dims.size(); i++)
+    {
+        // Constructs the affine for the src.
+        isl_aff *s_aff = isl_aff_var_on_domain(
+            isl_local_space_from_space(p_out_space),
+            isl_dim_in,
+            i
+        );
+        // Constructs the affine for the dst.
+        isl_aff *d_aff = isl_aff_var_on_domain(
+            isl_local_space_from_space(p_in_space),
+            isl_dim_in,
+            i
+        );
+        // Subtracts the dst. 
+        isl_aff *p_aff = isl_aff_sub(s_aff, d_aff);
+        isl_aff_dump(p_aff);
+    }
+
 
     return "Manhattan Scaffolding...\n"
     "          __  __                                             \n"
