@@ -34,95 +34,59 @@ std::string analyze_latency (
     isl_map *p_dst_fill, 
     isl_map *dist_func
 ) {
-    // Prints out the inputs.
-    dump("\np_src_occupancy: ", p_src_occupancy);
-    dump("p_dst_fill: ", p_dst_fill);
-    dump("dist_func: ", dist_func);
-
-    /* Invertsdst_fill such that data implies dst.
+    /* Inverts dst_fill such that data implies dst.
      * i.e. {[xd, yd] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
     isl_map *dst_fill_inverted = isl_map_reverse(
         isl_map_copy(p_dst_fill)
     );
-    dump("\ndst_fill_inverted: ", dst_fill_inverted);
     /* Inverts src_occupancy such that data implies source.
      * i.e. {[xs, ys] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
-    isl_map *src_occupancy_inverted = isl_map_reverse(
-        isl_map_copy(p_src_occupancy)
-    );
-    dump("src_occupancy_inverted: ", src_occupancy_inverted);
+    isl_map *src_occupancy_inverted = isl_map_reverse(p_src_occupancy);
 
     /* Takes the factored range of src_occupancy_inverted and dst_fill_inverted
      * to get {[d0, d1] -> [[xd, yd] -> [xs, ys]]} */
     isl_map *data_TO_dst_to_src = isl_map_range_product(
-            isl_map_copy(dst_fill_inverted),
-            isl_map_copy(src_occupancy_inverted)
+            dst_fill_inverted, src_occupancy_inverted
     );
-    dump("\ndata_TO_dst_to_src: ", data_TO_dst_to_src);
     /* Wraps dst fill such that the binary relation implies data.
      * i.e. {[[xd, yd] -> [d0, d1]] -> [d0, d1]} */
     isl_map *dst_fill_wrapped = isl_map_range_map(
         isl_map_copy(p_dst_fill)
     );
-    dump("dst_fill_wrapped: ", dst_fill_wrapped);
 
     /* Composites dst_fill_wrapped and data_to_dst_to_src to get
      * {[[xd, yd] -> [d0, d1]] -> [[xd', yd'] -> [xs, ys]]} */
     isl_map *dst_to_data_TO_dst_to_src = isl_map_apply_range(
-        isl_map_copy(dst_fill_wrapped),
-        isl_map_copy(data_TO_dst_to_src)
+        dst_fill_wrapped, data_TO_dst_to_src
     );
-    dump("\ndst_to_data_TO_dst_to_src: ", dst_to_data_TO_dst_to_src);
 
     // Restricts the range such that xd' = xd and yd' = yd.
-    if (islIntermediates) std::cout << '\n' << std::endl;
     for (int i = 0; i < isl_map_dim(p_dst_fill, isl_dim_in); i++)
     {
         /* Restricts the ith element of the output by equating it to the ith
          * element of the input. Treats input and output as if it were flat. */
         dst_to_data_TO_dst_to_src = isl_map_equate(
             dst_to_data_TO_dst_to_src,
-            isl_dim_in,
-            i,
-            isl_dim_out,
-            i
+            isl_dim_in, i,
+            isl_dim_out, i
         );
-        dump("dst_to_data_TO_dst_to_src_restricting_"+std::to_string(i)+": ", 
-             dst_to_data_TO_dst_to_src);
     };
-    dump("\ndst_to_data_TO_dst_to_src_restricted: ", dst_to_data_TO_dst_to_src);
 
     /* Computes the manhattan distance between the destination for a data and
      * a source for that data. */
-    isl_map *manhattan_distance = isl_map_apply_range(
-        isl_map_copy(dst_to_data_TO_dst_to_src),
-        isl_map_copy(dist_func)
-    );
-    dump("\nmanhattan_distance: ", manhattan_distance);
+    isl_map *manhattan_distance = isl_map_apply_range(dst_to_data_TO_dst_to_src, dist_func);
 
     // Computes the minimum distance from every source to every destination.
-    isl_multi_pw_aff *min_distance = isl_map_min_multi_pw_aff(
-        isl_map_copy(manhattan_distance)
-    );
-    dump("\nmin_distance: ", min_distance);
+    isl_multi_pw_aff *min_distance = isl_map_min_multi_pw_aff(manhattan_distance);
 
     // Computes the maximum of minimum distances for every data.
-    isl_multi_val *max_min_distance = isl_multi_pw_aff_max_multi_val(
-        isl_multi_pw_aff_copy(min_distance)
-    );
-    dump("\nmax_min_distance: ", max_min_distance);
+    isl_multi_val *max_min_distance = isl_multi_pw_aff_max_multi_val(min_distance);
 
     // Gets the string representation of the maximum minimum distance.
     std::string result = isl_multi_val_to_str(max_min_distance);
 
-    // Frees the isl intermediate objects.
-    isl_map_free(dst_fill_inverted);
-    isl_map_free(src_occupancy_inverted);
-    isl_map_free(data_TO_dst_to_src);
-    isl_map_free(dst_fill_wrapped);
-    isl_map_free(dst_to_data_TO_dst_to_src);
-    isl_map_free(manhattan_distance);
-    isl_multi_pw_aff_free(min_distance);
+    // Frees the isl objects.
+    isl_map_free(p_dst_fill);
     isl_multi_val_free(max_min_distance);
 
     return result;
@@ -163,17 +127,8 @@ std::string analyze_latency (
 
     // Turns dist_func into a map.
     isl_map *p_dist_func_map = isl_map_from_pw_aff(
-        isl_pw_aff_copy(p_dist_func)
+        p_dist_func
     );
-
-    // Dumps the isl objects.
-    dump("\np_src_occupancy: ", p_src_occupancy);
-    dump("p_dst_fill: ", p_dst_fill);
-    dump("p_dist_func: ", p_dist_func);
-    dump("p_dist_func_map: ", p_dist_func_map);
-
-    // Frees p_dist_func as it's now no longer needed once the map is formed.
-    isl_pw_aff_free(p_dist_func);
 
     // Calls the isl version of analyze_latency.
     std::string result = analyze_latency(
@@ -183,9 +138,6 @@ std::string analyze_latency (
     );
 
     // Frees the isl objects.
-    isl_map_free(p_src_occupancy);
-    isl_map_free(p_dst_fill);
-    isl_map_free(p_dist_func_map);
     isl_ctx_free(p_ctx);
 
     return result;
