@@ -24,10 +24,11 @@ int main(int argc, char* argv[])
  * of all the minimum paths for that data, then taking the max of all the latencies
  * for all the data.
  * 
- * @param p_src_occupancy   A map relating source location and the data occupied.
- * @param p_dst_fill        A map relating destination location and the data 
- *                          requested.
- * @param dist_func         The distance function to use, as a map.
+ * @param __isl_take p_src_occupancy    A map relating source location and the 
+ *                                      data occupied.
+ * @param __isl_take p_dst_fill         A map relating destination location and
+ *                                      the data requested.
+ * @param __isl_take dist_func          The distance function to use, as a map.
  */
 std::string analyze_latency (
     isl_map *p_src_occupancy, 
@@ -71,6 +72,7 @@ std::string analyze_latency (
             isl_dim_out, i
         );
     };
+    isl_map_free(p_dst_fill);
 
     /* Computes the manhattan distance between the destination for a data and
      * a source for that data. */
@@ -86,7 +88,6 @@ std::string analyze_latency (
     std::string result = isl_multi_val_to_str(max_min_distance);
 
     // Frees the isl objects.
-    isl_map_free(p_dst_fill);
     isl_multi_val_free(max_min_distance);
 
     return result;
