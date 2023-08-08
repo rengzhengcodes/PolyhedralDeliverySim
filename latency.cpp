@@ -229,51 +229,22 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
     std::vector<isl_id*> dst_ids;
     for (int i = 0; i < src_dims.size(); i++)
     {
-        src_ids.push_back(
-            isl_id_alloc(
-                p_ctx,
-                src_dims[i].c_str(),
-                nullptr
-            )
-        );
-        dst_ids.push_back(
-            isl_id_alloc(
-                p_ctx,
-                dst_dims[i].c_str(),
-                nullptr
-            )
-        );
+        src_ids.push_back(isl_id_alloc(p_ctx, src_dims[i].c_str(), NULL));
+        dst_ids.push_back(isl_id_alloc(p_ctx, dst_dims[i].c_str(), NULL));
     }
 
-    // Programmatically binds the dst and src dimensions to their respective spaces.
-    isl_space *p_in_space = isl_space_alloc(
-        p_ctx,
-        dst_dims.size(),
-        0,
-        0
-    );
-    isl_space *p_out_space = isl_space_alloc(
-        p_ctx,
-        src_dims.size(),
-        0,
-        0
-    );
+    // Allocates computer memory for the isl space where dist calculations are done.
+    isl_space *p_dist_space = isl_space_alloc(p_ctx, 0, dst_dims.size(), src_dims.size());
+    // Programmatically binds the dst and src dimensions to the dist space.
     for (int i = 0; i < src_dims.size(); i++)
     {
-        p_in_space = isl_space_set_dim_id(
-            p_in_space,
-            isl_dim_param,
-            i,
-            isl_id_copy(dst_ids[i])
-        );
-        p_out_space = isl_space_set_dim_id(
-            p_out_space,
-            isl_dim_param,
-            i,
-            isl_id_copy(src_ids[i])
-        );
+        p_dist_space = isl_space_set_dim_id(p_dist_space, isl_dim_in, i, dst_ids[i]);
+        p_dist_space = isl_space_set_dim_id(p_dist_space, isl_dim_out, i, src_ids[i]);
     }
-    isl_space_dump(p_in_space);
+    // Wraps the space into a set space.
+    p_dist_space = isl_space_wrap(p_dist_space);
+    // Converts it into a local space.
+    isl_local_space *p_dist_local = isl_local_space_from_space(p_dist_space);
 
     // Vector of all the affines for each part of the piecewise function.
     std::vector<isl_aff*> affs;
@@ -282,13 +253,13 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
     {
         // Constructs the affine for the src.
         isl_aff *s_aff = isl_aff_var_on_domain(
-            isl_local_space_from_space(p_out_space),
+            isl_local_space_from_space(p_dist_space),
             isl_dim_in,
             i
         );
         // Constructs the affine for the dst.
         isl_aff *d_aff = isl_aff_var_on_domain(
-            isl_local_space_from_space(p_in_space),
+            isl_local_space_from_space(p_dist_space),
             isl_dim_in,
             i
         );
