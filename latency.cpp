@@ -13,7 +13,109 @@ int main(int argc, char* argv[])
     std::string dist_func_str = n_long_ring_metric(torus_circumference);
   
     long result = analyze_latency(src_occupancy, dst_fill, dist_func_str);
+    analyze_jumps(src_occupancy, dst_fill, dist_func_str);
     std::cout << result << std::endl;
+}
+
+/**
+ * Analyzes the total jumps that a process takes given the source, destination,
+ * and distance function.
+ * 
+ * @param __isl_take p_src_occupancy    A map relating source location and the
+ *                                     data occupied.
+ * @param __isl_take p_dst_fill         A map relating destination location and
+ *                                     the data requested.
+ * @param __isl_take dist_func          The distance function to use, as a map.
+ */
+long analyze_jumps (
+    isl_map *p_src_occupancy, 
+    isl_map *p_dst_fill, 
+    isl_map *dist_func
+) {
+    /* Inverts dst_fill such that data implies dst.
+     * i.e. {[xd, yd] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
+    isl_map *dst_fill_inverted = isl_map_reverse(
+        isl_map_copy(p_dst_fill)
+    );
+    /* Inverts src_occupancy such that data implies source.
+     * i.e. {[xs, ys] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
+    isl_map *src_occupancy_inverted = isl_map_reverse(p_src_occupancy);
+
+    /* Takes the factored range of src_occupancy_inverted and dst_fill_inverted
+     * to get {[d0, d1] -> [[xd, yd] -> [xs, ys]]} */
+    isl_map *data_TO_dst_to_src = isl_map_range_product(
+            dst_fill_inverted, src_occupancy_inverted
+    );
+    /* Wraps dst fill such that the binary relation implies data.
+     * i.e. {[[xd, yd] -> [d0, d1]] -> [d0, d1]} */
+    isl_map *dst_fill_wrapped = isl_map_range_map(
+        isl_map_copy(p_dst_fill)
+    );
+
+    /* Composites dst_fill_wrapped and data_to_dst_to_src to get
+     * {[[xd, yd] -> [d0, d1]] -> [[xd', yd'] -> [xs, ys]]} */
+    isl_map *dst_to_data_TO_dst_to_src = isl_map_apply_range(
+        dst_fill_wrapped, data_TO_dst_to_src
+    );
+
+    // Restricts the range such that xd' = xd and yd' = yd.
+    for (int i = 0; i < isl_map_dim(p_dst_fill, isl_dim_in); i++)
+    {
+        /* Restricts the ith element of the output by equating it to the ith
+         * element of the input. Treats input and output as if it were flat. */
+        dst_to_data_TO_dst_to_src = isl_map_equate(
+            dst_to_data_TO_dst_to_src,
+            isl_dim_in, i,
+            isl_dim_out, i
+        );
+    };
+    isl_map_free(p_dst_fill);
+
+    /* Computes the manhattan distance between the destination for a data and
+     * a source for that data. */
+    isl_map *manhattan_distance = isl_map_apply_range(dst_to_data_TO_dst_to_src, dist_func);
+
+    // Computes the minimum distance from every source to every destination.
+    isl_multi_pw_aff *min_distance = isl_map_min_multi_pw_aff(manhattan_distance);
+    isl_multi_pw_aff_dump(min_distance);
+    return -1;
+}
+
+long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func)
+{
+    // Creates a new isl context.
+    isl_ctx *p_ctx = isl_ctx_alloc();
+
+    // Reads the string representations of the maps into isl objects.
+    isl_map *p_src_occupancy = isl_map_read_from_str(
+        p_ctx,
+        src_occupancy.c_str()
+    );
+    isl_map *p_dst_fill = isl_map_read_from_str(
+        p_ctx,
+        dst_fill.c_str()
+    );
+    isl_pw_aff *p_dist_func = isl_pw_aff_read_from_str(
+        p_ctx,
+        dist_func.c_str()
+    );
+
+    // Turns dist_func into a map.
+    isl_map *p_dist_func_map = isl_map_from_pw_aff(
+        p_dist_func
+    );
+
+    // Calls the isl version of analyze_latency.
+    long ret = analyze_jumps(
+        p_src_occupancy,
+        p_dst_fill,
+        p_dist_func_map
+    );
+
+    // Frees the isl objects.
+    isl_ctx_free(p_ctx);
+
+    return ret;
 }
 
 /**

@@ -15,6 +15,8 @@
 // Imports ISL val.
 #include <isl/val.h>
 
+long analyze_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_map *dist_func);
+long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func);
 long analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_map *dist_func);
 long analyze_latency(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func);
 
