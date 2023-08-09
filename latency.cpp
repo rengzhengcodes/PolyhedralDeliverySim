@@ -255,9 +255,9 @@ std::string n_long_ring_metric(long n)
     isl_pw_aff *dst_aff = isl_pw_aff_var_on_domain(p_dist_local, isl_dim_set, 1);
 
     // Subtracts the dst from the src.
-    isl_pw_aff *src_sub_dst_aff = isl_pw_aff_sub(isl_pw_aff_copy(src_aff), isl_pw_aff_copy(dst_aff));
+    isl_pw_aff *src_sub_dst_aff = isl_pw_aff_sub(src_aff, dst_aff);
     // Subtracts the src from the dst.
-    isl_pw_aff *dst_sub_src_aff = isl_pw_aff_sub(dst_aff, src_aff);
+    isl_pw_aff *dst_sub_src_aff = isl_pw_aff_neg(isl_pw_aff_copy(src_sub_dst_aff));
 
     // Creates an isl_val for the torus circumference.
     isl_val *p_circumference = isl_val_int_from_si(p_ctx, n);
