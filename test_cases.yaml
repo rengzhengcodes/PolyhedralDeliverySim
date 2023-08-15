@@ -149,6 +149,7 @@
         }
     expected:
         latency: 4
+        total_jumps: 16
 -   p_src: "{ [xs] -> [d0] : 0 <= xs < 8 and d0 = xs }"
     p_dst: "{ [xd] -> [d0] : 0 <= d0 < 8 and xd = 0 }"
     p_dist: *ring_dist_size_8
