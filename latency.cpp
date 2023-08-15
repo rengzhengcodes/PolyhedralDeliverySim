@@ -81,8 +81,9 @@ long analyze_jumps (
     isl_set *domain = isl_multi_pw_aff_domain(isl_multi_pw_aff_copy(min_distance));
     // Declares a global minimum distance counter.
     long min_dist = 0;
-    // Goes through each element of the domain and finds its output from min_distance.
-    isl_set_foreach_point(domain, [&min_dist](isl_point *p_point, void *p_user) -> isl_stat {
+    // Declares the looping lambda function.
+    auto min_dist_summation_fxn = [](isl_point *p_point, void *p_user) -> isl_stat 
+    {
         // Grabs the user data.
         isl_multi_pw_aff *p_min_distance = (isl_multi_pw_aff*) p_user;
         // Grabs the section of the piecewise function corresponding to this point.
@@ -103,7 +104,7 @@ long analyze_jumps (
         isl_val *p_min_distance_val_long = isl_multi_val_get_at(p_min_distance_val, 0);
         long min_distance_long = isl_val_get_num_si(p_min_distance_val_long);
         // Adds to global minimum distance counter.
-        min_dist += min_distance_long;
+        std::cout << min_distance_long << std::endl;
 
         // Frees the isl objects.
         isl_val_free(p_min_distance_val_long);
@@ -111,7 +112,10 @@ long analyze_jumps (
 
         // Returns for loop OK status.
         return isl_stat_ok;
-    }, min_distance);
+    };
+    // Goes through each element of the domain and finds its output from min_distance
+    // and adds it to the global minimum distance counter.
+    isl_set_foreach_point(domain, min_dist_summation_fxn, min_distance);
 
 
     isl_multi_pw_aff_free(min_distance);
