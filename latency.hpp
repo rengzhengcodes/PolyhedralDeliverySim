@@ -12,6 +12,8 @@
 // Includes ISL ids and dspaces.
 #include <isl/id.h>
 #include <isl/space.h>
+// Imports ISL sets.
+#include <isl/set.h>
 // Imports ISL val.
 #include <isl/val.h>
 

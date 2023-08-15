@@ -77,8 +77,44 @@ long analyze_jumps (
 
     // Computes the minimum distance from every source to every destination.
     isl_multi_pw_aff *min_distance = isl_map_min_multi_pw_aff(manhattan_distance);
-    isl_multi_pw_aff_dump(min_distance);
-    return -1;
+    // Fetches the domain.
+    isl_set *domain = isl_multi_pw_aff_domain(isl_multi_pw_aff_copy(min_distance));
+    // Goes through each element of the domain and finds its output from min_distance.
+    isl_set_foreach_point(domain, [](isl_point *p_point, void *p_user) -> isl_stat {
+        // Grabs the user data.
+        isl_multi_pw_aff *p_min_distance = (isl_multi_pw_aff*) p_user;
+        // Grabs the output of the minimum distance function for the point.
+        isl_multi_pw_aff *p_min_distance_pt = isl_multi_pw_aff_intersect_domain(
+            isl_multi_pw_aff_copy(p_min_distance),
+            isl_set_from_point(isl_point_copy(p_point))
+        );
+        // Finds the minimum distance for the point.
+        isl_multi_val *p_min_distance_val = isl_multi_pw_aff_min_multi_val(p_min_distance_pt);
+        // Ensures there's only one value.
+        isl_assert(
+            isl_multi_val_get_ctx(p_min_distance_val),
+            isl_multi_val_size(p_min_distance_val) == 1,
+            throw std::length_error("p_min_distance_val has more than one value.")
+        );
+
+        // Grabs the long representation of the minimum distance.
+        isl_val *p_min_distance_val_long = isl_multi_val_get_at(p_min_distance_val, 0);
+        long min_distance_long = isl_val_get_num_si(p_min_distance_val_long);
+
+        // Frees the isl objects.
+        isl_val_free(p_min_distance_val_long);
+        isl_multi_val_free(p_min_distance_val);
+
+        // Prints the minimum distance.
+        std::cout << min_distance_long << std::endl;
+
+        return isl_stat_ok;
+    }, min_distance);
+
+
+    isl_multi_pw_aff_free(min_distance);
+
+    return 0;
 }
 
 long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func)
