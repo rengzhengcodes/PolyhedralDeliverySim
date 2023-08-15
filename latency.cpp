@@ -83,8 +83,7 @@ long analyze_jumps (
     std::shared_ptr<long> p_min_dist = std::make_shared<long>(0);
     // Declares an std::pair to be used as the user data (variable capture in C).
     using isl_for_passthrough = std::pair<std::shared_ptr<long>, isl_multi_pw_aff*>;
-    isl_for_passthrough min_dist_pair = 
-        std::make_pair(p_min_dist, min_distance);
+    isl_for_passthrough min_dist_pair = std::make_pair(p_min_dist, min_distance);
     // Declares the looping lambda function.
     auto min_dist_summation_fxn = [](isl_point *p_point, void *p_user) -> isl_stat 
     {
