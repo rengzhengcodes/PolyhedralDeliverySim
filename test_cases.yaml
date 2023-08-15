@@ -159,3 +159,4 @@
     p_dist: *ring_dist_size_8
     expected:
         latency: 1
+        total_jumps: 4
