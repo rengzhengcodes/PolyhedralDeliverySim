@@ -80,17 +80,18 @@ long analyze_jumps (
     isl_set *domain = isl_multi_pw_aff_domain(isl_multi_pw_aff_copy(min_distance));
 
     // Declares a global minimum distance counter.
-    long min_dist = 0;
+    std::shared_ptr<long> p_min_dist = std::make_shared<long>(0);
     // Declares an std::pair to be used as the user data (variable capture in C).
-    using isl_for_passthrough = std::pair<long*, isl_multi_pw_aff*>;
-    isl_for_passthrough min_dist_pair = std::make_pair(&min_dist, min_distance);
+    using isl_for_passthrough = std::pair<std::shared_ptr<long>, isl_multi_pw_aff*>;
+    isl_for_passthrough min_dist_pair = 
+        std::make_pair(p_min_dist, min_distance);
     // Declares the looping lambda function.
     auto min_dist_summation_fxn = [](isl_point *p_point, void *p_user) -> isl_stat 
     {
         // Grabs the user data.
         isl_for_passthrough *p_min_dist_pair = (isl_for_passthrough*) p_user;
         // Grabs the global minimum distance counter.
-        long *p_min_dist = p_min_dist_pair->first;
+        std::shared_ptr<long> p_min_dist = p_min_dist_pair->first;
         // Grabs the minimum distance function.
         isl_multi_pw_aff *p_min_distance = p_min_dist_pair->second;
         // Grabs the section of the piecewise function corresponding to this point.
@@ -128,9 +129,9 @@ long analyze_jumps (
     isl_multi_pw_aff_free(min_distance);
     isl_set_free(domain);
 
-    std::cout << min_dist << std::endl;
+    std::cout << *p_min_dist << std::endl;
 
-    return min_dist;
+    return *p_min_dist;
 }
 
 long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func)
