@@ -3,9 +3,9 @@
 int main(int argc, char* argv[])
 {
     // Defines the src occupancy map as a string.
-    std::string src_occupancy = "{ [xs] -> [d0] : xs <= d0 <= xs + 1 and xs % 2 = 0}";
+    std::string src_occupancy = "{ [xs] -> [d0] : 0 <= xs < 8 and d0 = xs }";
     // Defines the dst fill map as a string.
-    std::string dst_fill = "{ [xd] -> [d0] : d0 = xd and 0 <= xd < 8 }";
+    std::string dst_fill = "{ [xd] -> [d0] : 0 <= d0 < 8 and xd = 0 }";
 
     // Defines the torus circumference.
     int torus_circumference = 8;
