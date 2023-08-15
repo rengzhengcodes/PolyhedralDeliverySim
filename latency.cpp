@@ -18,20 +18,17 @@ int main(int argc, char* argv[])
 }
 
 /**
- * Analyzes the total jumps that a process takes given the source, destination,
- * and distance function.
+ * Minimizes the distance between every dst and src per data.
  * 
  * @param __isl_take p_src_occupancy    A map relating source location and the
- *                                     data occupied.
+ *                                      data occupied.
  * @param __isl_take p_dst_fill         A map relating destination location and
- *                                     the data requested.
+ *                                      the data requested.
  * @param __isl_take dist_func          The distance function to use, as a map.
- */
-long analyze_jumps (
-    isl_map *p_src_occupancy, 
-    isl_map *p_dst_fill, 
-    isl_map *dist_func
-) {
+ */ 
+isl_multi_pw_aff *minimize_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_map *dist_func)
+{
+
     /* Inverts dst_fill such that data implies dst.
      * i.e. {[xd, yd] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
     isl_map *dst_fill_inverted = isl_map_reverse(
@@ -76,6 +73,31 @@ long analyze_jumps (
     isl_map *manhattan_distance = isl_map_apply_range(dst_to_data_TO_dst_to_src, dist_func);
     // Computes the minimum distance from every source to every destination.
     isl_multi_pw_aff *min_distance = isl_map_min_multi_pw_aff(manhattan_distance);
+
+    return min_distance;
+}
+
+/**
+ * Analyzes the total jumps that a process takes given the source, destination,
+ * and distance function.
+ * 
+ * @param __isl_take p_src_occupancy    A map relating source location and the
+ *                                     data occupied.
+ * @param __isl_take p_dst_fill         A map relating destination location and
+ *                                     the data requested.
+ * @param __isl_take dist_func          The distance function to use, as a map.
+ */
+long analyze_jumps (
+    isl_map *p_src_occupancy, 
+    isl_map *p_dst_fill, 
+    isl_map *dist_func
+) {
+    // Fetches the minimum distance between every source and destination per data.
+    isl_multi_pw_aff *min_distance = minimize_jumps(
+        p_src_occupancy,
+        p_dst_fill,
+        dist_func
+    );
     // Fetches the domain.
     isl_set *domain = isl_multi_pw_aff_domain(isl_multi_pw_aff_copy(min_distance));
 
@@ -187,51 +209,12 @@ long analyze_latency (
     isl_map *p_dst_fill, 
     isl_map *dist_func
 ) {
-    /* Inverts dst_fill such that data implies dst.
-     * i.e. {[xd, yd] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
-    isl_map *dst_fill_inverted = isl_map_reverse(
-        isl_map_copy(p_dst_fill)
+    // Grab the minimum distance between every source and destination per data.
+    isl_multi_pw_aff *min_distance = minimize_jumps(
+        p_src_occupancy,
+        p_dst_fill,
+        dist_func
     );
-    /* Inverts src_occupancy such that data implies source.
-     * i.e. {[xs, ys] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
-    isl_map *src_occupancy_inverted = isl_map_reverse(p_src_occupancy);
-
-    /* Takes the factored range of src_occupancy_inverted and dst_fill_inverted
-     * to get {[d0, d1] -> [[xd, yd] -> [xs, ys]]} */
-    isl_map *data_TO_dst_to_src = isl_map_range_product(
-            dst_fill_inverted, src_occupancy_inverted
-    );
-    /* Wraps dst fill such that the binary relation implies data.
-     * i.e. {[[xd, yd] -> [d0, d1]] -> [d0, d1]} */
-    isl_map *dst_fill_wrapped = isl_map_range_map(
-        isl_map_copy(p_dst_fill)
-    );
-
-    /* Composites dst_fill_wrapped and data_to_dst_to_src to get
-     * {[[xd, yd] -> [d0, d1]] -> [[xd', yd'] -> [xs, ys]]} */
-    isl_map *dst_to_data_TO_dst_to_src = isl_map_apply_range(
-        dst_fill_wrapped, data_TO_dst_to_src
-    );
-
-    // Restricts the range such that xd' = xd and yd' = yd.
-    for (int i = 0; i < isl_map_dim(p_dst_fill, isl_dim_in); i++)
-    {
-        /* Restricts the ith element of the output by equating it to the ith
-         * element of the input. Treats input and output as if it were flat. */
-        dst_to_data_TO_dst_to_src = isl_map_equate(
-            dst_to_data_TO_dst_to_src,
-            isl_dim_in, i,
-            isl_dim_out, i
-        );
-    };
-    isl_map_free(p_dst_fill);
-
-    /* Computes the manhattan distance between the destination for a data and
-     * a source for that data. */
-    isl_map *manhattan_distance = isl_map_apply_range(dst_to_data_TO_dst_to_src, dist_func);
-
-    // Computes the minimum distance from every source to every destination.
-    isl_multi_pw_aff *min_distance = isl_map_min_multi_pw_aff(manhattan_distance);
     // Computes the maximum of minimum distances for every data.
     isl_multi_val *max_min_distance = isl_multi_pw_aff_max_multi_val(min_distance);
     // Ensures there's only one value.
