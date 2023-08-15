@@ -81,11 +81,19 @@ long analyze_jumps (
     isl_set *domain = isl_multi_pw_aff_domain(isl_multi_pw_aff_copy(min_distance));
     // Declares a global minimum distance counter.
     long min_dist = 0;
+    // Declares an std::pair to be used as the user data.
+    using isl_for_passthrough = std::pair<std::shared_ptr<long>, isl_multi_pw_aff*>;
+    isl_for_passthrough min_dist_pair = 
+        std::make_pair(std::shared_ptr<long>(&min_dist), min_distance);
     // Declares the looping lambda function.
     auto min_dist_summation_fxn = [](isl_point *p_point, void *p_user) -> isl_stat 
     {
         // Grabs the user data.
-        isl_multi_pw_aff *p_min_distance = (isl_multi_pw_aff*) p_user;
+        isl_for_passthrough *p_min_dist_pair = (isl_for_passthrough*) p_user;
+        // Grabs the global minimum distance counter.
+        std::shared_ptr<long> p_min_dist = p_min_dist_pair->first;
+        // Grabs the minimum distance function.
+        isl_multi_pw_aff *p_min_distance = p_min_dist_pair->second;
         // Grabs the section of the piecewise function corresponding to this point.
         isl_multi_pw_aff *p_min_distance_pt = isl_multi_pw_aff_intersect_domain(
             isl_multi_pw_aff_copy(p_min_distance),
@@ -104,7 +112,7 @@ long analyze_jumps (
         isl_val *p_min_distance_val_long = isl_multi_val_get_at(p_min_distance_val, 0);
         long min_distance_long = isl_val_get_num_si(p_min_distance_val_long);
         // Adds to global minimum distance counter.
-        std::cout << min_distance_long << std::endl;
+        *p_min_dist += min_distance_long;
 
         // Frees the isl objects.
         isl_val_free(p_min_distance_val_long);
@@ -115,7 +123,7 @@ long analyze_jumps (
     };
     // Goes through each element of the domain and finds its output from min_distance
     // and adds it to the global minimum distance counter.
-    isl_set_foreach_point(domain, min_dist_summation_fxn, min_distance);
+    isl_set_foreach_point(domain, min_dist_summation_fxn, &min_dist_pair);
 
 
     isl_multi_pw_aff_free(min_distance);
