@@ -12,9 +12,10 @@ int main(int argc, char* argv[])
     // Defines the distance function string.
     std::string dist_func_str = n_long_ring_metric(torus_circumference);
   
-    long result = analyze_latency(src_occupancy, dst_fill, dist_func_str);
-    analyze_jumps(src_occupancy, dst_fill, dist_func_str);
-    std::cout << result << std::endl;
+    long latency = analyze_latency(src_occupancy, dst_fill, dist_func_str);
+    long jumps = analyze_jumps(src_occupancy, dst_fill, dist_func_str);
+    std::cout << "latency: " << latency << std::endl;
+    std::cout << "jumps:\t " << jumps << std::endl;
 }
 
 /**
@@ -149,8 +150,6 @@ long analyze_jumps (
     // Frees the isl objects.
     isl_multi_pw_aff_free(min_distance);
     isl_set_free(domain);
-
-    std::cout << *p_min_dist << std::endl;
 
     return *p_min_dist;
 }
