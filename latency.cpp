@@ -82,7 +82,7 @@ long analyze_jumps (
     // Declares a global minimum distance counter.
     long min_dist = 0;
     // Goes through each element of the domain and finds its output from min_distance.
-    isl_set_foreach_point(domain, [min_dist](isl_point *p_point, void *p_user) -> isl_stat {
+    isl_set_foreach_point(domain, [&min_dist](isl_point *p_point, void *p_user) -> isl_stat {
         // Grabs the user data.
         isl_multi_pw_aff *p_min_distance = (isl_multi_pw_aff*) p_user;
         // Grabs the section of the piecewise function corresponding to this point.
