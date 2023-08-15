@@ -133,6 +133,7 @@
         }
     expected:
         latency: 28
+        total_jumps: null
 -   p_src: |
         { [xs, ys, z1s, z2s] -> [d0, d1, d2, d3] :
             0 <= d0 < 8 and 0 <= d1 < 8 and 0 <= d2 < 8 and 0 <= d3 < 8 and 
@@ -146,6 +147,7 @@
     p_dist: *4d_manhattan_dist
     expected:
         latency: 28
+        total_jumps: null
 -   p_src: "{ [xs] -> [d0] : 0 <= d0 < 8 and xs = 0 }"
     p_dst: "{ [xd] -> [d0] : d0 = xd and 0 <= xd < 8 }"
     p_dist: &ring_dist_size_8 |
