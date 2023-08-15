@@ -74,24 +74,23 @@ long analyze_jumps (
     /* Computes the manhattan distance between the destination for a data and
      * a source for that data. */
     isl_map *manhattan_distance = isl_map_apply_range(dst_to_data_TO_dst_to_src, dist_func);
-
     // Computes the minimum distance from every source to every destination.
     isl_multi_pw_aff *min_distance = isl_map_min_multi_pw_aff(manhattan_distance);
     // Fetches the domain.
     isl_set *domain = isl_multi_pw_aff_domain(isl_multi_pw_aff_copy(min_distance));
+
     // Declares a global minimum distance counter.
     long min_dist = 0;
-    // Declares an std::pair to be used as the user data.
-    using isl_for_passthrough = std::pair<std::shared_ptr<long>, isl_multi_pw_aff*>;
-    isl_for_passthrough min_dist_pair = 
-        std::make_pair(std::shared_ptr<long>(&min_dist), min_distance);
+    // Declares an std::pair to be used as the user data (variable capture in C).
+    using isl_for_passthrough = std::pair<long*, isl_multi_pw_aff*>;
+    isl_for_passthrough min_dist_pair = std::make_pair(&min_dist, min_distance);
     // Declares the looping lambda function.
     auto min_dist_summation_fxn = [](isl_point *p_point, void *p_user) -> isl_stat 
     {
         // Grabs the user data.
         isl_for_passthrough *p_min_dist_pair = (isl_for_passthrough*) p_user;
         // Grabs the global minimum distance counter.
-        std::shared_ptr<long> p_min_dist = p_min_dist_pair->first;
+        long *p_min_dist = p_min_dist_pair->first;
         // Grabs the minimum distance function.
         isl_multi_pw_aff *p_min_distance = p_min_dist_pair->second;
         // Grabs the section of the piecewise function corresponding to this point.
