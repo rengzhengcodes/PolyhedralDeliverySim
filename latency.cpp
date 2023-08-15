@@ -99,9 +99,9 @@ long analyze_jumps (
             isl_multi_pw_aff_copy(p_min_distance),
             isl_set_from_point(p_point)
         );
+
         // Finds the minimum distance for the point.
         isl_multi_val *p_min_distance_val = isl_multi_pw_aff_min_multi_val(p_min_distance_pt);
-
         // Ensures there's only one value.
         isl_assert(
             isl_multi_val_get_ctx(p_min_distance_val),
@@ -125,11 +125,13 @@ long analyze_jumps (
     // and adds it to the global minimum distance counter.
     isl_set_foreach_point(domain, min_dist_summation_fxn, &min_dist_pair);
 
-
+    // Frees the isl objects.
     isl_multi_pw_aff_free(min_distance);
     isl_set_free(domain);
 
-    return 0;
+    std::cout << min_dist << std::endl;
+
+    return min_dist;
 }
 
 long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func)
