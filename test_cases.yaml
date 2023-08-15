@@ -41,6 +41,7 @@
     p_dist: *2d_manhattan_dist
     expected:
         latency: 2
+        total_jumps: 108
 -   p_src: "{ [xs, ys] -> [d0, d1] : d0 = xs % 3 and d1 = ys % 3 and 0 <= xs < 9 and 0 <= ys < 9}"
     p_dst: |
         { [xd, yd] -> [d0, d1] : 
