@@ -3,14 +3,14 @@
 int main(int argc, char* argv[])
 {
     // Defines the src occupancy map as a string.
-    std::string src_occupancy = "{ [xs] -> [d0] : 0 <= d0 < 8 and xs = 0 }";
+    std::string src_occupancy = "{ [xs, ys] -> [d0, d1] : d0 = xs and 0 <= d1 < 8 and 0 <= xs < 8 and 0 <= ys < 8 }";
     // Defines the dst fill map as a string.
-    std::string dst_fill = "{ [xd] -> [d0] : d0 = xd and 0 <= xd < 8 }";
+    std::string dst_fill ="{ [xd, yd] -> [d0, d1] : d0 = xd and d1 = yd and 0 <= xd < 8 and 0 <= yd < 8 }";
 
     // Defines the torus circumference.
     int torus_circumference = 8;
     // Defines the distance function string.
-    std::string dist_func_str = n_long_ring_metric(torus_circumference);
+    std::string dist_func_str = nd_manhattan_metric({"xs", "ys"}, {"xd", "yd"});
   
     long latency = analyze_latency(src_occupancy, dst_fill, dist_func_str);
     long jumps = analyze_jumps(src_occupancy, dst_fill, dist_func_str);
