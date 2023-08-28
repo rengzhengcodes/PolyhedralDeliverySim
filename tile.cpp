@@ -22,20 +22,20 @@ int main(int argc, char const *argv[])
             (4yd <= data < 4yd + 4)
         })DSTS"
     );
-    // The data space as a set.
-    isl_set *data_domain = isl_set_read_from_str(ctx, 
-        "{ [data] | 0 <= data < 16 }"
-    );
 
     /** PROGRAMMATIC GENERATION WITH TILE **/
-    tile(
-        ctx,
-        isl_set_copy(data_domain),
-        2,
-        isl_id_alloc(ctx, "ys", NULL),
-        isl_map_domain(isl_map_copy(src_occ))
+    isl_map *tiling = tile(
+        0,
+        isl_map_get_space(src_occ),
+        8,
+        1
     );
-    
+    src_occ = isl_map_intersect(src_occ, tiling);
+    isl_map_dump(src_occ);
+    isl_map_free(src_occ);
+    isl_map_free(dst_fill);
+
+    isl_ctx_free(ctx);
 
     return 0;
 }
@@ -44,38 +44,36 @@ int main(int argc, char const *argv[])
  * Creates an ISL set that restricts the data domain to a tiling split along a
  * certain axis.
  * 
- * Read as: In context ctx, tile the data in blocks of n (consecutive) along
- * this given axis in the given src_space.
+ * Read as: Tile the data axis in position data_dim from 
+ * src_space in blocks of n consecutive elements along src axis axis_dim.
  * 
- * @param ctx       __isl_keep  The ISL context.
- * @param data      __isl_take  The data domain being tiled.
- * @param n         __isl_keep  The number of blocks (consecutive elements).
- * @param axis      __isl_take  The axis along which to tile.
+ * @param data_dim  __isl_keep  The data axis index.
  * @param src_space __isl_take  The space in which the axis is defined.
+ * @param n         __isl_keep  The number of elements in a block.
+ * @param axis_dim  __isl_keep  The axis index to tile along.
  */
-isl_set *tile(
-    isl_ctx *ctx, 
-    isl_set *data,
+isl_map *tile(
+    int data_dim,
+    isl_space *src_space,
     int n, 
-    isl_id *axis,
-    isl_set *src_space
+    int axis_dim
 ) {
-    /* Calculates the block size of the tiling. */
-    // Calculates the number of data elements.
-    /// @todo Find a constant-time way to do this.
-    uint32_t data_len = 0;
-    isl_set_foreach_point(data, 
-    [](isl_point *point, void *user) -> isl_stat {
-        uint32_t *data_len = (uint32_t *)user;
-        data_len[0]++;
-        return isl_stat_ok;
-    }, &data_len);
-    std::cout << "data_len: " << data_len << std::endl;
-    // Calculates the block size with ceiling division.
-    uint32_t block_size = data_len / n + (data_len % n != 0);
-    std::cout << "block_size: " << block_size << std::endl;
+    /* Creates the tiling restriction */
+    // Allocates local space for the tiling restriction.
+    isl_local_space *tile_local_space = isl_local_space_from_space(src_space);
+    // Creates n*axis <= data (equiv. to data - n*axis >= 0)
+    isl_constraint *tile_lower = isl_constraint_alloc_inequality(isl_local_space_copy(tile_local_space));
+    tile_lower = isl_constraint_set_coefficient_si(tile_lower, isl_dim_in, axis_dim, -n);
+    tile_lower = isl_constraint_set_coefficient_si(tile_lower, isl_dim_out, data_dim, 1);
+    // Creates n*axis + n > data (equiv. to n*axis + n - data - 1 >= 0)
+    isl_constraint *tile_upper = isl_constraint_alloc_inequality(tile_local_space);
+    tile_upper = isl_constraint_set_coefficient_si(tile_upper, isl_dim_in, axis_dim, n);
+    tile_upper = isl_constraint_set_coefficient_si(tile_upper, isl_dim_out, data_dim, -1);
+    tile_upper = isl_constraint_set_constant_si(tile_upper, n - 1);
+    // Creates the tiling restriction.
+    isl_basic_map *tile = isl_basic_map_from_constraint(tile_lower);
+    tile = isl_basic_map_add_constraint(tile, tile_upper);
 
-
-    // Calculates the block size of the tiling.
-    return nullptr;
+    // Returns the tiling restriction
+    return isl_map_from_basic_map(tile);
 }
