@@ -1,11 +1,4 @@
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-#include <isl/id.h>
-#include <isl/map.h>
-#include <isl/set.h>
-#include <isl/space.h>
+#include "tile.hpp"
 
 int main(int argc, char const *argv[])
 {
@@ -39,9 +32,41 @@ int main(int argc, char const *argv[])
     isl_map_dump(dst_fill);
     isl_set_dump(data_domain);
     /** PROGRAMMATIC GENERATION WITH TILE **/
-    // Tile("d", 2, "ys")
+    tile(
+        ctx,
+        isl_set_copy(data_domain),
+        2,
+        isl_id_alloc(ctx, "ys", NULL),
+        isl_map_domain(isl_map_copy(src_occ))
+    );
     
 
     return 0;
 }
 
+/**
+ * Creates an ISL set that restricts the data domain to a tiling split along a
+ * certain axis.
+ * 
+ * Read as: In context ctx, tile the data in blocks of n (consecutive) along
+ * this given axis in the given src_space.
+ * 
+ * @param ctx       __isl_keep  The ISL context.
+ * @param data      __isl_take  The data domain being tiled.
+ * @param n         __isl_keep  The number of elements in each block (consecutive).
+ * @param axis      __isl_take  The axis along which to tile.
+ * @param src_space __isl_take  The space in which the axis is defined.
+ */
+isl_set *tile(
+    isl_ctx *ctx, 
+    isl_set *data,
+    int n, 
+    isl_id *axis,
+    isl_set *src_space
+) {
+    isl_set_dump(src_space);
+    isl_set_dump(data);
+    isl_id_dump(axis);
+    // Calculates the block size of the tiling.
+    return nullptr;
+}
