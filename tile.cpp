@@ -27,10 +27,6 @@ int main(int argc, char const *argv[])
         "{ [data] | 0 <= data < 16 }"
     );
 
-    // Dumps the maps.
-    isl_map_dump(src_occ);
-    isl_map_dump(dst_fill);
-    isl_set_dump(data_domain);
     /** PROGRAMMATIC GENERATION WITH TILE **/
     tile(
         ctx,
@@ -53,7 +49,7 @@ int main(int argc, char const *argv[])
  * 
  * @param ctx       __isl_keep  The ISL context.
  * @param data      __isl_take  The data domain being tiled.
- * @param n         __isl_keep  The number of elements in each block (consecutive).
+ * @param n         __isl_keep  The number of blocks (consecutive elements).
  * @param axis      __isl_take  The axis along which to tile.
  * @param src_space __isl_take  The space in which the axis is defined.
  */
@@ -64,9 +60,22 @@ isl_set *tile(
     isl_id *axis,
     isl_set *src_space
 ) {
-    isl_set_dump(src_space);
-    isl_set_dump(data);
-    isl_id_dump(axis);
+    /* Calculates the block size of the tiling. */
+    // Calculates the number of data elements.
+    /// @todo Find a constant-time way to do this.
+    uint32_t data_len = 0;
+    isl_set_foreach_point(data, 
+    [](isl_point *point, void *user) -> isl_stat {
+        uint32_t *data_len = (uint32_t *)user;
+        data_len[0]++;
+        return isl_stat_ok;
+    }, &data_len);
+    std::cout << "data_len: " << data_len << std::endl;
+    // Calculates the block size with ceiling division.
+    uint32_t block_size = data_len / n + (data_len % n != 0);
+    std::cout << "block_size: " << block_size << std::endl;
+
+
     // Calculates the block size of the tiling.
     return nullptr;
 }
