@@ -10,16 +10,16 @@ int main(int argc, char const *argv[])
     // The SRCs mapping to some unknown occupancy.
     isl_map *src_occ = isl_map_read_from_str(ctx, 
         R"SRCS({ [xs, ys] -> [data] |
-            (0 <= xs < 4 and xs % 2 = 0) and
-            (0 <= ys < 4 and ys % 2 = 0) and
+            (0 <= xs < 2) and
+            (0 <= ys < 2) and
             0 <= data < 16
         })SRCS"
     );
     // The DSTs mapping to a known quantity.
     isl_map *dst_fill = isl_map_read_from_str(ctx, 
         R"DSTS({ [xd, yd] -> [data] |
-            (0 <= xd < 4 and xd % 2 = 0) and
-            (0 <= yd < 4 and yd % 2 = 0) and
+            (0 <= xd < 4) and
+            (0 <= yd < 4) and
             (4yd <= data < 4yd + 4) and
             0 <= data < 16
         })DSTS"
@@ -32,7 +32,14 @@ int main(int argc, char const *argv[])
         8,
         1
     );
-    src_occ = isl_map_intersect(src_occ, tiling);
+    isl_map *subtiling = tile(
+        0,
+        isl_map_get_space(tiling),
+        4,
+        0
+    );
+    isl_map_dump(subtiling);
+    src_occ = isl_map_intersect(isl_map_intersect(src_occ, tiling), subtiling);
     isl_map_dump(src_occ);
     isl_map_free(src_occ);
     isl_map_free(dst_fill);
