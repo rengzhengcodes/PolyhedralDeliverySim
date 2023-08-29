@@ -79,3 +79,22 @@ isl_map *tile(
     // Returns the tiling restriction
     return isl_map_from_basic_map(tile);
 }
+
+/**
+ * Creates an ISL set that expands the data data domain in a certain src to duplicate
+ * it over a certain axis.
+ * 
+ * Read as: Replicate the feature n times along the given src axis axis_dim.
+ * 
+ * @param feature  __isl_take   The binding feature to replicate.
+ * @param n        __isl_keep   The number of times to replicate the feature.
+ * @param axis_dim __isl_keep   The axis index to replicate along (assumed to be
+ *                              an src axis index in the space of feature).
+ */
+isl_map *replicate(
+    isl_map *feature,
+    int n,
+    int axis_dim
+) {
+    return nullptr;
+}

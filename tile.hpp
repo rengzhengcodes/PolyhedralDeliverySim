@@ -16,3 +16,8 @@ isl_map *tile(
     int n, 
     int axis_dim
 );
+isl_map *replicate(
+    isl_map *feature,
+    int n,
+    int axis_dim
+);
