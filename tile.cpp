@@ -6,6 +6,7 @@ int main(int argc, char const *argv[])
     /** ASSUMED GIVENS FROM USER **/
     // Creates an ISL context.
     isl_ctx *ctx = isl_ctx_alloc();
+
     /** Creates the topology. **/
     // The SRCs mapping to some unknown occupancy.
     isl_map *src_occ = isl_map_read_from_str(ctx, 
@@ -24,13 +25,14 @@ int main(int argc, char const *argv[])
             0 <= data < 16
         })DSTS"
     );
-    // The distance function, as a unification of the src_occ and dst_fill
-    // coordinate systems.
+    /* Defines the distance function, which serves as a unification of the 
+     * src_occ and dst_fill coordinate systems. */
     isl_map *dist_calc = isl_map_read_from_str(ctx,
         R"DIST({[[xs, ys] -> [xd, yd]] -> [dist] |
             2xs + 2ys + xd + yd = dist
         })DIST"
     );
+
     /** PROGRAMMATIC GENERATION WITH TILE **/
     // Generates the tiling and the subtiling.
     isl_map *tiling = tile(0, isl_map_get_space(src_occ), 8, 1);
