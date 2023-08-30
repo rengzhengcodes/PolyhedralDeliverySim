@@ -24,25 +24,26 @@ int main(int argc, char const *argv[])
             0 <= data < 16
         })DSTS"
     );
-
+    // The distance function, as a unification of the src_occ and dst_fill
+    // coordinate systems.
+    isl_map *dist_calc = isl_map_read_from_str(ctx,
+        R"DIST({[[xs, ys] -> [xd, yd]] -> [dist] |
+            2xs + 2ys + xd + yd = dist
+        })DIST"
+    );
     /** PROGRAMMATIC GENERATION WITH TILE **/
-    isl_map *tiling = tile(
-        0,
-        isl_map_get_space(src_occ),
-        8,
-        1
-    );
-    isl_map *subtiling = tile(
-        0,
-        isl_map_get_space(tiling),
-        4,
-        0
-    );
-    isl_map_dump(subtiling);
+    // Generates the tiling and the subtiling.
+    isl_map *tiling = tile(0, isl_map_get_space(src_occ), 8, 1);
+    isl_map *subtiling = tile(0, isl_map_get_space(tiling), 4, 0);
+    // Intersects the two tiling specifications with existing src_occ specs.
     src_occ = isl_map_intersect(isl_map_intersect(src_occ, tiling), subtiling);
+    // Dumps out combined result.
     isl_map_dump(src_occ);
+
+    // Frees variables not already handled by __isl_take input params.
     isl_map_free(src_occ);
     isl_map_free(dst_fill);
+    isl_map_free(dist_calc);
 
     isl_ctx_free(ctx);
 
