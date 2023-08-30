@@ -146,8 +146,8 @@ long analyze_jumps (
         // Returns for loop OK status.
         return isl_stat_ok;
     };
-    // Goes through each element of the domain and finds its output from min_distance
-    // and adds it to the global minimum distance counter.
+    /* Goes through each element of the domain and finds its output from min_distance
+     * and adds it to the global minimum distance counter. */
     isl_set_foreach_point(domain, min_dist_summation_fxn, &min_dist_pair);
 
     // Frees the isl objects.
@@ -257,16 +257,10 @@ long analyze_latency (
     isl_map *src_occ_map = isl_map_read_from_str(ctx, src_occupancy.c_str());
     isl_map *dst_fill_map = isl_map_read_from_str(ctx, dst_fill.c_str());
     isl_pw_aff *dist_func_aff = isl_pw_aff_read_from_str(ctx, dist_func.c_str());
-
     // Turns dist_func into a map.
     isl_map *dist_func_map = isl_map_from_pw_aff(dist_func_aff);
-
     // Calls the isl version of analyze_latency.
-    long ret = analyze_latency(
-        src_occ_map,
-        dst_fill_map,
-        dist_func_map
-    );
+    long ret = analyze_latency(src_occ_map, dst_fill_map, dist_func_map);
 
     // Frees the isl objects.
     isl_ctx_free(ctx);
