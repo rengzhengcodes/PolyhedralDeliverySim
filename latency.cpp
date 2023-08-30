@@ -212,14 +212,11 @@ long analyze_latency (
     isl_map *dist_func
 ) {
     // Grab the minimum distance between every source and destination per data.
-    isl_multi_pw_aff *min_distance = minimize_jumps(
-        p_src_occupancy,
-        p_dst_fill,
-        dist_func
-    );
+    isl_multi_pw_aff *min_distance = minimize_jumps(p_src_occupancy, p_dst_fill, dist_func);
     // Computes the maximum of minimum distances for every data.
     isl_multi_val *max_min_distance = isl_multi_pw_aff_max_multi_val(min_distance);
-    // Ensures there's only one value.
+    /* Ensures there's only one maximum value, as multiple latencies means an
+     * error has occured. */
     isl_assert(
         isl_multi_val_get_ctx(max_min_distance),
         isl_multi_val_size(max_min_distance) == 1,
@@ -254,36 +251,25 @@ long analyze_latency (
     const std::string& dist_func
 ) {
     // Creates a new isl context.
-    isl_ctx *p_ctx = isl_ctx_alloc();
+    isl_ctx *ctx = isl_ctx_alloc();
 
     // Reads the string representations of the maps into isl objects.
-    isl_map *p_src_occupancy = isl_map_read_from_str(
-        p_ctx,
-        src_occupancy.c_str()
-    );
-    isl_map *p_dst_fill = isl_map_read_from_str(
-        p_ctx,
-        dst_fill.c_str()
-    );
-    isl_pw_aff *p_dist_func = isl_pw_aff_read_from_str(
-        p_ctx,
-        dist_func.c_str()
-    );
+    isl_map *src_occ_map = isl_map_read_from_str(ctx, src_occupancy.c_str());
+    isl_map *dst_fill_map = isl_map_read_from_str(ctx, dst_fill.c_str());
+    isl_pw_aff *dist_func_aff = isl_pw_aff_read_from_str(ctx, dist_func.c_str());
 
     // Turns dist_func into a map.
-    isl_map *p_dist_func_map = isl_map_from_pw_aff(
-        p_dist_func
-    );
+    isl_map *dist_func_map = isl_map_from_pw_aff(dist_func_aff);
 
     // Calls the isl version of analyze_latency.
     long ret = analyze_latency(
-        p_src_occupancy,
-        p_dst_fill,
-        p_dist_func_map
+        src_occ_map,
+        dst_fill_map,
+        dist_func_map
     );
 
     // Frees the isl objects.
-    isl_ctx_free(p_ctx);
+    isl_ctx_free(ctx);
 
     return ret;
 }
