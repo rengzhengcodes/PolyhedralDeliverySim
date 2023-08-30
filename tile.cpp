@@ -45,6 +45,7 @@ int main(int argc, char const *argv[])
     isl_map_free(dst_fill);
     isl_map_free(dist_calc);
 
+    // Frees ctx to ensure on program exit everything is freed.
     isl_ctx_free(ctx);
 
     return 0;
