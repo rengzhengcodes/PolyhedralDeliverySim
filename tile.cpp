@@ -71,9 +71,9 @@ isl_map *tile(
     int n, 
     int axis_dim
 ) {
-    /* Creates the tiling restriction */
     // Allocates local space for the tiling restriction.
     isl_local_space *tile_local_space = isl_local_space_from_space(src_space);
+
     // Creates n*axis <= data (equiv. to data - n*axis >= 0)
     isl_constraint *tile_lower = isl_constraint_alloc_inequality(isl_local_space_copy(tile_local_space));
     tile_lower = isl_constraint_set_coefficient_si(tile_lower, isl_dim_in, axis_dim, -n);
@@ -83,7 +83,8 @@ isl_map *tile(
     tile_upper = isl_constraint_set_coefficient_si(tile_upper, isl_dim_in, axis_dim, n);
     tile_upper = isl_constraint_set_coefficient_si(tile_upper, isl_dim_out, data_dim, -1);
     tile_upper = isl_constraint_set_constant_si(tile_upper, n - 1);
-    // Creates the tiling restriction.
+
+    // Combines the two above restrictions to creates the tiling restriction.
     isl_basic_map *tile = isl_basic_map_from_constraint(tile_lower);
     tile = isl_basic_map_add_constraint(tile, tile_upper);
 
