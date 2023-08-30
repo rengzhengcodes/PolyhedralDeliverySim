@@ -91,57 +91,48 @@ isl_multi_pw_aff *minimize_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, 
  *                                     the data requested.
  * @param __isl_take dist_func          The distance function to use, as a map.
  */
-long analyze_jumps (
-    isl_map *p_src_occupancy, 
-    isl_map *p_dst_fill, 
-    isl_map *dist_func
-) {
+long analyze_jumps (isl_map *src_occ, isl_map *dst_fill, isl_map *dist_func)
+{
     // Fetches the minimum distance between every source and destination per data.
-    isl_multi_pw_aff *min_distance = minimize_jumps(
-        p_src_occupancy,
-        p_dst_fill,
-        dist_func
-    );
+    isl_multi_pw_aff *min_dist = minimize_jumps(src_occ, dst_fill, dist_func);
     // Fetches the domain.
-    isl_set *domain = isl_multi_pw_aff_domain(isl_multi_pw_aff_copy(min_distance));
+    isl_set *domain = isl_multi_pw_aff_domain(isl_multi_pw_aff_copy(min_dist));
 
     // Declares a global minimum distance counter.
-    std::shared_ptr<long> p_min_dist = std::make_shared<long>(0);
-    // Declares an std::pair to be used as the user data (variable capture in C).
+    std::shared_ptr<long> min_dist_sum = std::make_shared<long>(0);
+    // Declares an std::pair to be used as the user data for isl_set_foreach_point.
     using isl_for_passthrough = std::pair<std::shared_ptr<long>, isl_multi_pw_aff*>;
-    isl_for_passthrough min_dist_pair = std::make_pair(p_min_dist, min_distance);
+    isl_for_passthrough min_dist_pair = std::make_pair(min_dist_sum, min_dist);
     // Declares the looping lambda function.
-    auto min_dist_summation_fxn = [](isl_point *p_point, void *p_user) -> isl_stat 
+    auto min_dist_summation_fxn = [](isl_point *pt, void *user) -> isl_stat 
     {
         // Grabs the user data.
-        isl_for_passthrough *p_min_dist_pair = (isl_for_passthrough*) p_user;
+        isl_for_passthrough *min_dist_pair = (isl_for_passthrough*) user;
         // Grabs the global minimum distance counter.
-        std::shared_ptr<long> p_min_dist = p_min_dist_pair->first;
+        std::shared_ptr<long> min_dist_sum = min_dist_pair->first;
         // Grabs the minimum distance function.
-        isl_multi_pw_aff *p_min_distance = p_min_dist_pair->second;
+        isl_multi_pw_aff *min_dist = min_dist_pair->second;
         // Grabs the section of the piecewise function corresponding to this point.
-        isl_multi_pw_aff *p_min_distance_pt = isl_multi_pw_aff_intersect_domain(
-            isl_multi_pw_aff_copy(p_min_distance),
-            isl_set_from_point(p_point)
+        isl_multi_pw_aff *min_dist_pt = isl_multi_pw_aff_intersect_domain(
+            isl_multi_pw_aff_copy(min_dist),
+            isl_set_from_point(pt)
         );
 
         // Finds the minimum distance for the point.
-        isl_multi_val *p_min_distance_val = isl_multi_pw_aff_min_multi_val(p_min_distance_pt);
+        isl_multi_val *min_dist_vals = isl_multi_pw_aff_min_multi_val(min_dist_pt);
         // Ensures there's only one value.
         isl_assert(
-            isl_multi_val_get_ctx(p_min_distance_val),
-            isl_multi_val_size(p_min_distance_val) == 1,
+            isl_multi_val_get_ctx(min_dist_vals), isl_multi_val_size(min_dist_vals) == 1,
             throw std::length_error("p_min_distance_val has more than one value.")
         );
-        // Grabs the long representation of the minimum distance.
-        isl_val *p_min_distance_val_long = isl_multi_val_get_at(p_min_distance_val, 0);
-        long min_distance_long = isl_val_get_num_si(p_min_distance_val_long);
+        // Collapses the multival to 1 val.
+        isl_val *min_dist_val = isl_multi_val_get_at(min_dist_vals, 0);
+        isl_multi_val_free(min_dist_vals);                                      // Freed as no longer necessary.
         // Adds to global minimum distance counter.
-        *p_min_dist += min_distance_long;
+        *min_dist_sum += isl_val_get_num_si(min_dist_val);
 
         // Frees the isl objects.
-        isl_val_free(p_min_distance_val_long);
-        isl_multi_val_free(p_min_distance_val);
+        isl_val_free(min_dist_val);
 
         // Returns for loop OK status.
         return isl_stat_ok;
@@ -151,10 +142,10 @@ long analyze_jumps (
     isl_set_foreach_point(domain, min_dist_summation_fxn, &min_dist_pair);
 
     // Frees the isl objects.
-    isl_multi_pw_aff_free(min_distance);
+    isl_multi_pw_aff_free(min_dist);
     isl_set_free(domain);
 
-    return *p_min_dist;
+    return *min_dist_sum;
 }
 
 long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func)
