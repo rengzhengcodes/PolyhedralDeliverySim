@@ -1,4 +1,7 @@
 #include "latency.hpp"
+#include "isl/polynomial.h"
+#include "barvinok/isl.h"
+#include "barvinok/polylib.h"
 
 int main(int argc, char* argv[])
 {
@@ -95,57 +98,25 @@ long analyze_jumps (isl_map *src_occ, isl_map *dst_fill, isl_map *dist_func)
 {
     // Fetches the minimum distance between every source and destination per data.
     isl_multi_pw_aff *min_dist = minimize_jumps(src_occ, dst_fill, dist_func);
-    // Fetches the domain.
-    isl_set *domain = isl_multi_pw_aff_domain(isl_multi_pw_aff_copy(min_dist));
+    // std::cout << "min_dist: " << isl_multi_pw_aff_to_str(min_dist) << std::endl;
 
-    // Declares a global minimum distance counter.
-    std::shared_ptr<long> min_dist_sum = std::make_shared<long>(0);
-    // Declares an std::pair to be used as the user data for isl_set_foreach_point.
-    using isl_for_passthrough = std::pair<std::shared_ptr<long>, isl_multi_pw_aff*>;
-    isl_for_passthrough min_dist_pair = std::make_pair(min_dist_sum, min_dist);
-    // Declares the looping lambda function.
-    auto min_dist_summation_fxn = [](isl_point *pt, void *user) -> isl_stat 
+    for (int i = 0; i < isl_multi_pw_aff_size(min_dist); i++)
     {
-        // Grabs the user data.
-        isl_for_passthrough *min_dist_pair = (isl_for_passthrough*) user;
-        // Grabs the global minimum distance counter.
-        std::shared_ptr<long> min_dist_sum = min_dist_pair->first;
-        // Grabs the minimum distance function.
-        isl_multi_pw_aff *min_dist = min_dist_pair->second;
-        // Grabs the section of the piecewise function corresponding to this point.
-        isl_multi_pw_aff *min_dist_pt = isl_multi_pw_aff_intersect_domain(
-            isl_multi_pw_aff_copy(min_dist),
-            isl_set_from_point(pt)
+        // Fetches the ith pw_aff.
+        isl_pw_aff *p_aff = isl_multi_pw_aff_get_pw_aff(min_dist, i);
+        // std::cout << "p_aff: " << isl_pw_aff_to_str(p_aff) << std::endl;
+        // Computes the sum of the minimum distances of the ith pw_aff.
+        isl_pw_qpolynomial *p_poly = isl_pw_qpolynomial_from_pw_aff(
+            p_aff
         );
-
-        // Finds the minimum distance for the point.
-        isl_multi_val *min_dist_vals = isl_multi_pw_aff_min_multi_val(min_dist_pt);
-        // Ensures there's only one value.
-        isl_assert(
-            isl_multi_val_get_ctx(min_dist_vals), isl_multi_val_size(min_dist_vals) == 1,
-            throw std::length_error("p_min_distance_val has more than one value.")
-        );
-        // Collapses the multival to 1 val.
-        isl_val *min_dist_val = isl_multi_val_get_at(min_dist_vals, 0);
-        isl_multi_val_free(min_dist_vals);                                      // Freed as no longer necessary.
-        // Adds to global minimum distance counter.
-        *min_dist_sum += isl_val_get_num_si(min_dist_val);
-
-        // Frees the isl objects.
-        isl_val_free(min_dist_val);
-
-        // Returns for loop OK status.
-        return isl_stat_ok;
+        isl_pw_qpolynomial *p_val = isl_pw_qpolynomial_sum(p_poly);
+        std::cout << "p_val: " << isl_pw_qpolynomial_to_str(p_val) << std::endl;
     };
-    /* Goes through each element of the domain and finds its output from min_distance
-     * and adds it to the global minimum distance counter. */
-    isl_set_foreach_point(domain, min_dist_summation_fxn, &min_dist_pair);
 
     // Frees the isl objects.
     isl_multi_pw_aff_free(min_dist);
-    isl_set_free(domain);
 
-    return *min_dist_sum;
+    return 0;
 }
 
 long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func)
