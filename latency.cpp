@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
  *                                      the data requested.
  * @param __isl_take dist_func          The distance function to use, as a map.
  */ 
-isl_multi_pw_aff *minimize_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_aff *dist_func)
+isl_multi_pw_aff *minimize_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_pw_aff *dist_func)
 {
 
     /* Inverts dst_fill such that data implies dst.
@@ -91,7 +91,7 @@ isl_multi_pw_aff *minimize_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, 
  *                                     the data requested.
  * @param __isl_take dist_func          The distance function to use, as a map.
  */
-long analyze_jumps (isl_map *src_occ, isl_map *dst_fill, isl_aff *dist_func)
+long analyze_jumps (isl_map *src_occ, isl_map *dst_fill, isl_pw_aff *dist_func)
 {
     // Fetches the minimum distance between every source and destination per data.
     isl_multi_pw_aff *min_dist = minimize_jumps(src_occ, dst_fill, dist_func);
@@ -167,16 +167,11 @@ long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill
         dist_func.c_str()
     );
 
-    // Turns dist_func into a map.
-    isl_map *p_dist_func_map = isl_map_from_pw_aff(
-        p_dist_func
-    );
-
     // Calls the isl version of analyze_latency.
     long ret = analyze_jumps(
         p_src_occupancy,
         p_dst_fill,
-        p_dist_func_map
+        p_dist_func
     );
 
     // Frees the isl objects.
@@ -200,7 +195,7 @@ long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill
 long analyze_latency (
     isl_map *p_src_occupancy, 
     isl_map *p_dst_fill, 
-    isl_aff *dist_func
+    isl_pw_aff *dist_func
 ) {
     // Grab the minimum distance between every source and destination per data.
     isl_multi_pw_aff *min_distance = minimize_jumps(p_src_occupancy, p_dst_fill, dist_func);
@@ -245,13 +240,11 @@ long analyze_latency (
     isl_ctx *ctx = isl_ctx_alloc();
 
     // Reads the string representations of the maps into isl objects.
-    isl_map *src_occ_map = isl_map_read_from_str(ctx, src_occupancy.c_str());
-    isl_map *dst_fill_map = isl_map_read_from_str(ctx, dst_fill.c_str());
-    isl_pw_aff *dist_func_aff = isl_pw_aff_read_from_str(ctx, dist_func.c_str());
-    // Turns dist_func into a map.
-    isl_map *dist_func_map = isl_map_from_pw_aff(dist_func_aff);
+    isl_map *p_src_occ = isl_map_read_from_str(ctx, src_occupancy.c_str());
+    isl_map *p_dst_fill = isl_map_read_from_str(ctx, dst_fill.c_str());
+    isl_pw_aff *p_dist_aff = isl_pw_aff_read_from_str(ctx, dist_func.c_str());
     // Calls the isl version of analyze_latency.
-    long ret = analyze_latency(src_occ_map, dst_fill_map, dist_func_map);
+    long ret = analyze_latency(p_src_occ, p_dst_fill, p_dist_aff);
 
     // Frees the isl objects.
     isl_ctx_free(ctx);
