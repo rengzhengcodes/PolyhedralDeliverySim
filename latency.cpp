@@ -107,7 +107,7 @@ long analyze_jumps(isl_map *src_occ, isl_map *dst_fill, isl_pw_aff *dist_func)
     // Fetches the minimum distance between every source and destination per data.
     isl_pw_qpolynomial_fold *min_dist = minimize_jumps(src_occ, dst_fill, dist_func);
     // Computes the maximum of minimum distances for every data.
-    isl_val *max_min_dist = 0;
+    isl_val *max_min_dist = isl_pw_qpolynomial_fold_max(min_dist);
     std::cout << "max_min_dist: " << isl_val_get_num_si(max_min_dist) << std::endl;
     isl_pw_qpolynomial_fold_free(min_dist);
     isl_val_free(max_min_dist);
