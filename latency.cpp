@@ -102,61 +102,17 @@ isl_pw_qpolynomial_fold *minimize_jumps(
  *                                     the data requested.
  * @param __isl_take dist_func          The distance function to use, as a map.
  */
-long analyze_jumps (isl_map *src_occ, isl_map *dst_fill, isl_pw_aff *dist_func)
+long analyze_jumps(isl_map *src_occ, isl_map *dst_fill, isl_pw_aff *dist_func)
 {
     // Fetches the minimum distance between every source and destination per data.
-    isl_multi_pw_aff *min_dist = minimize_jumps(src_occ, dst_fill, dist_func);
-    // Fetches the domain.
-    isl_set *domain = isl_multi_pw_aff_domain(isl_multi_pw_aff_copy(min_dist));
+    isl_pw_qpolynomial_fold *min_dist = minimize_jumps(src_occ, dst_fill, dist_func);
+    // Computes the maximum of minimum distances for every data.
+    isl_val *max_min_dist = 0;
+    std::cout << "max_min_dist: " << isl_val_get_num_si(max_min_dist) << std::endl;
+    isl_pw_qpolynomial_fold_free(min_dist);
+    isl_val_free(max_min_dist);
 
-    // Declares a global minimum distance counter.
-    std::shared_ptr<long> min_dist_sum = std::make_shared<long>(0);
-    // Declares an std::pair to be used as the user data for isl_set_foreach_point.
-    using isl_for_passthrough = std::pair<std::shared_ptr<long>, isl_multi_pw_aff*>;
-    isl_for_passthrough min_dist_pair = std::make_pair(min_dist_sum, min_dist);
-    // Declares the looping lambda function.
-    auto min_dist_summation_fxn = [](isl_point *pt, void *user) -> isl_stat 
-    {
-        // Grabs the user data.
-        isl_for_passthrough *min_dist_pair = (isl_for_passthrough*) user;
-        // Grabs the global minimum distance counter.
-        std::shared_ptr<long> min_dist_sum = min_dist_pair->first;
-        // Grabs the minimum distance function.
-        isl_multi_pw_aff *min_dist = min_dist_pair->second;
-        // Grabs the section of the piecewise function corresponding to this point.
-        isl_multi_pw_aff *min_dist_pt = isl_multi_pw_aff_intersect_domain(
-            isl_multi_pw_aff_copy(min_dist),
-            isl_set_from_point(pt)
-        );
-
-        // Finds the minimum distance for the point.
-        isl_multi_val *min_dist_vals = isl_multi_pw_aff_min_multi_val(min_dist_pt);
-        // Ensures there's only one value.
-        isl_assert(
-            isl_multi_val_get_ctx(min_dist_vals), isl_multi_val_size(min_dist_vals) == 1,
-            throw std::length_error("p_min_distance_val has more than one value.")
-        );
-        // Collapses the multival to 1 val.
-        isl_val *min_dist_val = isl_multi_val_get_at(min_dist_vals, 0);
-        isl_multi_val_free(min_dist_vals);                                      // Freed as no longer necessary.
-        // Adds to global minimum distance counter.
-        *min_dist_sum += isl_val_get_num_si(min_dist_val);
-
-        // Frees the isl objects.
-        isl_val_free(min_dist_val);
-
-        // Returns for loop OK status.
-        return isl_stat_ok;
-    };
-    /* Goes through each element of the domain and finds its output from min_distance
-     * and adds it to the global minimum distance counter. */
-    isl_set_foreach_point(domain, min_dist_summation_fxn, &min_dist_pair);
-
-    // Frees the isl objects.
-    isl_multi_pw_aff_free(min_dist);
-    isl_set_free(domain);
-
-    return *min_dist_sum;
+    return 0;
 }
 
 long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func)
@@ -209,26 +165,11 @@ long analyze_latency (
     isl_pw_aff *dist_func
 ) {
     // Grab the minimum distance between every source and destination per data.
-    isl_multi_pw_aff *min_distance = minimize_jumps(p_src_occupancy, p_dst_fill, dist_func);
+    isl_pw_qpolynomial_fold *min_distance = minimize_jumps(p_src_occupancy, p_dst_fill, dist_func);
     // Computes the maximum of minimum distances for every data.
-    isl_multi_val *max_min_distance = isl_multi_pw_aff_max_multi_val(min_distance);
-    /* Ensures there's only one maximum value, as multiple latencies means an
-     * error has occured. */
-    isl_assert(
-        isl_multi_val_get_ctx(max_min_distance),
-        isl_multi_val_size(max_min_distance) == 1,
-        throw std::length_error("max_min_distance has more than one value.")
-    );
+    isl_pw_qpolynomial_fold_free(min_distance);
 
-    // Gets the long representation of the maximum minimum distance.
-    isl_val *result = isl_multi_val_get_at(max_min_distance, 0);
-    long ret = isl_val_get_num_si(result);
-
-    // Frees the isl objects.
-    isl_multi_val_free(max_min_distance);
-    isl_val_free(result);
-
-    return ret;
+    return 0;
 }
 
 /**
