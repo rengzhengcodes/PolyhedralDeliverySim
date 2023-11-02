@@ -30,8 +30,11 @@ int main(int argc, char* argv[])
  *                                      the data requested.
  * @param __isl_take dist_func          The distance function to use, as a map.
  */ 
-isl_multi_pw_aff *minimize_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_pw_aff *dist_func)
-{
+isl_pw_qpolynomial_fold *minimize_jumps(
+    isl_map *p_src_occupancy, 
+    isl_map *p_dst_fill, 
+    isl_pw_aff *dist_func
+) {
 
     /* Inverts dst_fill such that data implies dst.
      * i.e. {[xd, yd] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
@@ -72,13 +75,21 @@ isl_multi_pw_aff *minimize_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, 
     };
     isl_map_free(p_dst_fill);
 
+    // Converts the distance function into a pw_qpolynomial.
+    isl_pw_qpolynomial *dist_func_pw = isl_pw_qpolynomial_from_pw_aff(dist_func);
+    // Converts the pw_qpolynomial into a pw_qpolynomial_fold.
+    isl_pw_qpolynomial_fold *dist_func_fold = isl_pw_qpolynomial_fold_from_pw_qpolynomial(
+        isl_fold_min, dist_func_pw
+    );
+    
     /* Computes the manhattan distance between the destination for a data and
      * a source for that data. */
-    isl_map *manhattan_distance = isl_map_apply_range(dst_to_data_TO_dst_to_src, dist_func);
-    // Computes the minimum distance from every source to every destination.
-    isl_multi_pw_aff *min_distance = isl_map_min_multi_pw_aff(manhattan_distance);
+    isl_bool b = isl_bool_true;
+    isl_pw_qpolynomial_fold *manhattan_distance = isl_map_apply_pw_qpolynomial_fold(
+        dst_to_data_TO_dst_to_src, dist_func_fold, &b
+    );
 
-    return min_distance;
+    return manhattan_distance;
 }
 
 /**

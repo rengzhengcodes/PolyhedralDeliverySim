@@ -8,6 +8,8 @@
 // Includes ISL affine list/piecewise functions.
 #include <isl/aff.h>
 #include <isl/ilp.h>
+// Includes isl qpolynomials.
+#include <isl/polynomial.h>
 // Includes ISL maps/binary relations.
 #include <isl/map.h>
 // Includes ISL ids and dspaces.
