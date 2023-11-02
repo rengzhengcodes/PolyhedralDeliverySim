@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
  *                                      the data requested.
  * @param __isl_take dist_func          The distance function to use, as a map.
  */ 
-isl_multi_pw_aff *minimize_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_map *dist_func)
+isl_multi_pw_aff *minimize_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_aff *dist_func)
 {
 
     /* Inverts dst_fill such that data implies dst.
@@ -91,7 +91,7 @@ isl_multi_pw_aff *minimize_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, 
  *                                     the data requested.
  * @param __isl_take dist_func          The distance function to use, as a map.
  */
-long analyze_jumps (isl_map *src_occ, isl_map *dst_fill, isl_map *dist_func)
+long analyze_jumps (isl_map *src_occ, isl_map *dst_fill, isl_aff *dist_func)
 {
     // Fetches the minimum distance between every source and destination per data.
     isl_multi_pw_aff *min_dist = minimize_jumps(src_occ, dst_fill, dist_func);
@@ -200,7 +200,7 @@ long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill
 long analyze_latency (
     isl_map *p_src_occupancy, 
     isl_map *p_dst_fill, 
-    isl_map *dist_func
+    isl_aff *dist_func
 ) {
     // Grab the minimum distance between every source and destination per data.
     isl_multi_pw_aff *min_distance = minimize_jumps(p_src_occupancy, p_dst_fill, dist_func);
