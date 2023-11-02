@@ -3,11 +3,11 @@
 int main(int argc, char* argv[])
 {
     // Defines the src occupancy map as a string.
-    std::string src_occupancy = "{ [xs, ys] -> [d0, d1] : d0 = xs and d1 = ys and 0 <= xs < 100000 and 0 <= ys < 100000 }";
+    std::string src_occupancy = "{ [xs, ys] -> [d0, d1] : d0 = xs % 3 and d1 = ys % 3 and 0 <= xs < 100 and 0 <= ys < 100 }";
     // Defines the dst fill map as a string.
     std::string dst_fill = R"DST({ [xd, yd] -> [d0, d1] : 
-            0 <= d0 < 100000 and 0 <= d1 < 100000 and 
-            0 <= xd < 100000 and 0 <= yd < 100000 and xd % 3 = 1 and yd % 3 = 1
+            0 <= d0 < 3 and 0 <= d1 < 3 and 
+            0 <= xd < 100 and 0 <= yd < 100 and xd % 3 = 1 and yd % 3 = 1
         })DST";
 
     // Defines the torus circumference.
@@ -79,7 +79,7 @@ isl_pw_qpolynomial_fold *minimize_jumps(
     isl_pw_qpolynomial *dist_func_pw = isl_pw_qpolynomial_from_pw_aff(dist_func);
     // Converts the pw_qpolynomial into a pw_qpolynomial_fold.
     isl_pw_qpolynomial_fold *dist_func_fold = isl_pw_qpolynomial_fold_from_pw_qpolynomial(
-        isl_fold_min, dist_func_pw
+        isl_fold_max, dist_func_pw
     );
     
     /* Computes the manhattan distance between the destination for a data and
@@ -106,13 +106,17 @@ long analyze_jumps(isl_map *src_occ, isl_map *dst_fill, isl_pw_aff *dist_func)
 {
     // Fetches the minimum distance between every source and destination per data.
     isl_pw_qpolynomial_fold *min_dist = minimize_jumps(src_occ, dst_fill, dist_func);
+    std::cout << "min_dist: " << isl_pw_qpolynomial_fold_list_to_str(
+        isl_pw_qpolynomial_fold_to_list(min_dist)) << std::endl;
     // Computes the maximum of minimum distances for every data.
-    isl_val *max_min_dist = isl_pw_qpolynomial_fold_max(min_dist);
-    std::cout << "max_min_dist: " << isl_val_get_num_si(max_min_dist) << std::endl;
-    isl_pw_qpolynomial_fold_free(min_dist);
+    isl_val *max_min_dist = isl_pw_qpolynomial_fold_min(min_dist);
+    int ret = isl_val_get_num_si(max_min_dist);
+    std::cout << "max_min_dist: " << ret << std::endl;
+
+    // Frees the isl objects.
     isl_val_free(max_min_dist);
 
-    return 0;
+    return ret;
 }
 
 long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func)
