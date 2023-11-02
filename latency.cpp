@@ -3,11 +3,11 @@
 int main(int argc, char* argv[])
 {
     // Defines the src occupancy map as a string.
-    std::string src_occupancy = "{ [xs, ys] -> [d0, d1] : d0 = xs % 3 and d1 = ys % 3 and 0 <= xs < 9 and 0 <= ys < 9 }";
+    std::string src_occupancy = "{ [xs, ys] -> [d0, d1] : d0 = xs and d1 = ys and 0 <= xs < 100000 and 0 <= ys < 100000 }";
     // Defines the dst fill map as a string.
     std::string dst_fill = R"DST({ [xd, yd] -> [d0, d1] : 
-            0 <= d0 < 3 and 0 <= d1 < 3 and 
-            0 <= xd < 9 and 0 <= yd < 9 and xd % 3 = 1 and yd % 3 = 1
+            0 <= d0 < 100000 and 0 <= d1 < 100000 and 
+            0 <= xd < 100000 and 0 <= yd < 100000 and xd % 3 = 1 and yd % 3 = 1
         })DST";
 
     // Defines the torus circumference.
