@@ -104,19 +104,7 @@ isl_pw_qpolynomial_fold *minimize_jumps(
  */
 long analyze_jumps(isl_map *src_occ, isl_map *dst_fill, isl_pw_aff *dist_func)
 {
-    // Fetches the minimum distance between every source and destination per data.
-    isl_pw_qpolynomial_fold *min_dist = minimize_jumps(src_occ, dst_fill, dist_func);
-    std::cout << "min_dist: " << isl_pw_qpolynomial_fold_list_to_str(
-        isl_pw_qpolynomial_fold_to_list(min_dist)) << std::endl;
-    // Computes the maximum of minimum distances for every data.
-    isl_val *max_min_dist = isl_pw_qpolynomial_fold_min(min_dist);
-    int ret = isl_val_get_num_si(max_min_dist);
-    std::cout << "max_min_dist: " << ret << std::endl;
-
-    // Frees the isl objects.
-    isl_val_free(max_min_dist);
-
-    return ret;
+    return 0;
 }
 
 long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func)
@@ -164,16 +152,20 @@ long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill
  * @param __isl_take dist_func          The distance function to use, as a map.
  */
 long analyze_latency (
-    isl_map *p_src_occupancy, 
+    isl_map *p_src_occ, 
     isl_map *p_dst_fill, 
-    isl_pw_aff *dist_func
+    isl_pw_aff *p_dist_func
 ) {
-    // Grab the minimum distance between every source and destination per data.
-    isl_pw_qpolynomial_fold *min_distance = minimize_jumps(p_src_occupancy, p_dst_fill, dist_func);
+    // Fetches the minimum distance between every source and destination per data.
+    isl_pw_qpolynomial_fold *p_min_dist = minimize_jumps(p_src_occ, p_dst_fill, p_dist_func);
     // Computes the maximum of minimum distances for every data.
-    isl_pw_qpolynomial_fold_free(min_distance);
+    isl_val *p_max_min_dist = isl_pw_qpolynomial_fold_min(p_min_dist);
+    int ret = isl_val_get_num_si(p_max_min_dist);
 
-    return 0;
+    // Frees the isl objects.
+    isl_val_free(p_max_min_dist);
+
+    return ret;
 }
 
 /**
