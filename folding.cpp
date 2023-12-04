@@ -12,7 +12,7 @@ struct geometry
 {
     std::string srcs;
     std::string dsts;
-}
+};
 
 class Layer
 {
@@ -88,3 +88,18 @@ class Layer
             return cost_applied;
         }
 };
+
+int main(int argc, char* argv[])
+{
+    std::string srcs = R"SRC(
+        {[id] -> [data] : id = 0 and 0 <= data <= 1}
+    )SRC";
+    isl_map *src = isl_map_read_from_str(ctx, srcs.c_str());
+    std::string data = R"DST(
+        {[id, x, y] -> [data]: id = 0 and -1 = x and x = 1 and 0 <= y <= 1 and data = y}
+    )DST";
+    isl_map *dst = isl_map_read_from_str(ctx, data.c_str());
+    std::string fold = R"FOLD(
+        {[id, x, y] -> [id, x, cost, data]: id = 0 and 0 <= x <= 1, 0 <= y <= 1}
+    )FOLD";
+}
