@@ -25,6 +25,9 @@ class Layer
     public:
         /// @brief The cost formula of the folding step for this layer.
         const std::string crease_costs;
+        /// @brief The folding action to a multicastable representation after
+        /// calculating the cost of folding.
+        const std::string fold_formula;
         /// @brief The cost of the multicasting step for this layer.
         const std::string multicast_formula;
         /// @brief The collapse formulation for the next layer.
@@ -50,32 +53,32 @@ class Layer
           * @param crease_costs The cost formula of unmulticastable datum as 
           * an ISL string. Goes under the assumption the input is either the 
           * starting geometry architecture or the output of a previous layer.
+          * @param fold_formula The isl_map in a string representation that
+          * projects away the unmulticastable portions of the path of a datum to
+          * a dst. This is what we refer to as "folding".
           * @param multicast_formula The cost formula for multicasting a datum
           * as an ISL string. Goes under the assumption that the input is of
           * the form of this Layer's ISL representation after folding.
           * @param ctx The context the layer is in.
           */
         Layer(
-            const std::string& crease_costs, 
+            const std::string& crease_costs, const std::string& fold_formula,
             const std::string& multicast_formula,
         isl_ctx* ctx):
-        crease_costs(crease_costs), multicast_formula(multicast_formula), ctx(ctx) {}
+        crease_costs(crease_costs), fold_formula(fold_formula), ctx(ctx) {}
         /// @brief Calculates the cost of the atomic units of this layer, then
         /// stores the cost.
         void evaluate(const std::string& s_srcs, const std::string& s_dsts)
         {
             // Folds the destinations onto their connected trunk.
             isl_map *folded = this->fold(s_dsts);
-            /** @todo Sum the cost of the atomic units of this layer and add to
-              * the cost_result.*/
-
+            std::cout << "Folded: " << isl_map_to_str(folded) << std::endl;
             // Calculates the cost to every folded node per datum.
             // isl_map *expense = this->expense(folded);
             /** @todo Sum the cost of the expenses to each node and add to the
               * cost_result.*/
 
             // Frees the maps.
-            isl_map_free(folded);
         }
     private:
         /** @brief Folds the destinations onto their connected trunk. Updates
@@ -92,7 +95,7 @@ class Layer
             
             /// @note Gets the total cost of the folded dsts.
             // Returns { [id, x, y] -> number_of_data}
-            isl_pw_qpolynomial *p_card = isl_map_card(p_dsts);
+            isl_pw_qpolynomial *p_card = isl_map_card(isl_map_copy(p_dsts));
             // Calculates the cost per datum per dst cast from the trunk.
             isl_pw_qpolynomial *p_fold_cost = isl_pw_qpolynomial_read_from_str(ctx, this->crease_costs.c_str());
             // Calculates the cost per dst cast from the trunk.
@@ -107,9 +110,19 @@ class Layer
             // Frees the values.
             isl_val_free(v_total_cost);
 
-            /// @todo return the folded dsts.
+            /// @note Folds p_dsts onto the trunk according to the fold formula.
+            // Reads the fold formula into isl format.
+            isl_map *p_fold = isl_map_read_from_str(ctx, this->fold_formula.c_str());
+            // Folds the dsts onto the trunk.
+            isl_map *p_folded = isl_map_apply_range(p_fold, p_dsts);
+            p_folded = isl_map_reverse(p_folded);
+            // Gets the largest y value per datum.
+            std::string all_after = "{ [id, y] -> [id, y'] : y' > y }";
+            isl_map *p_all_after = isl_map_read_from_str(ctx, all_after.c_str());
+            isl_map *p_max_y = isl_map_apply_range(isl_map_copy(p_folded), p_all_after);
+            isl_map *p_folded_condensed = isl_map_subtract(p_folded, p_max_y);
 
-            return p_dsts;
+            return p_folded_condensed;
         }
         /// @brief Calculates the the cost to every folded node per datum.
         isl_map *trunk_cost(isl_map *fold)
@@ -147,10 +160,12 @@ int main(int argc, char* argv[])
     // );
     // isl_map* id_to_all_dst_data = isl_map_apply_range(id_to_all_x_y, dst);
     // isl_map* id_to_missing_data = isl_map_subtract(id_to_all_dst_data, src);
+
     /// @todo Do abs not sq.
     std::string crease_costs = "{ [id, x, y] -> x^2 }";
+    std::string fold_formula = "{ [id, y] -> [id, x, y] }";
     std::string multicast_costs = "{ [id, y] -> y }";
-    Layer test = Layer(crease_costs, multicast_costs, ctx);
+    Layer test = Layer(crease_costs, fold_formula, multicast_costs, ctx);
     std::cout << "Evaluating..." << std::endl;
     test.evaluate(srcs, data);
 
