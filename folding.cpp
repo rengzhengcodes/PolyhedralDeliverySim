@@ -65,7 +65,8 @@ class Layer
             const std::string& crease_costs, const std::string& fold_formula,
             const std::string& multicast_costs,
         isl_ctx* ctx):
-        crease_costs(crease_costs), fold_formula(fold_formula), ctx(ctx) {}
+        crease_costs(crease_costs), fold_formula(fold_formula),
+        multicast_costs(multicast_costs), ctx(ctx) {}
 
         /// @brief Calculates the cost of the atomic units of this layer, then
         /// stores the cost.
@@ -133,7 +134,15 @@ class Layer
             isl_pw_qpolynomial *p_cast_cost = isl_pw_qpolynomial_read_from_str(ctx, this->multicast_costs.c_str());
             // Applies the cost formulation to the folded dsts.
             isl_pw_qpolynomial *p_cost_applied = isl_map_apply_pw_qpolynomial(folded_geometry, p_cast_cost);
-            std::cout << "Cost applied: " << isl_pw_qpolynomial_to_str(p_cost_applied) << std::endl;
+            // Sums all the costs.
+            isl_pw_qpolynomial *p_total_cost = isl_pw_qpolynomial_sum(p_cost_applied);
+            // Evaluates the cost.
+            isl_val *v_total_cost = isl_pw_qpolynomial_eval(p_total_cost, isl_point_zero(isl_pw_qpolynomial_get_domain_space(p_total_cost)));
+            // Adds the cost to the total cost.
+            this->cost_result += isl_val_get_d(v_total_cost);
+            // Frees the values.
+            isl_val_free(v_total_cost);
+
 
             
             return folded_geometry;
