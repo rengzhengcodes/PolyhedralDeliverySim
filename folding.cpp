@@ -81,6 +81,8 @@ class Layer
             this->multicast(folded);
             std::cout << "Total Cost: " << this->cost_result << std::endl;
 
+            ///@todo Collapse the folded destinations into the next layer.
+
             // Frees the maps.
         }
     private:
