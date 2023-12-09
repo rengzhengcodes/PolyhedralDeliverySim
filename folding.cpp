@@ -103,7 +103,9 @@ class Layer
             isl_val *v_total_cost = isl_pw_qpolynomial_eval(p_total_cost, isl_point_zero(isl_pw_qpolynomial_get_domain_space(p_total_cost)));
             // Adds the cost to the total cost.
             this->cost_result += isl_val_get_d(v_total_cost);
-            std::cout << "Cost of folding: " << isl_val_get_d(v_total_cost) << std::endl;
+            std::cout << this->cost_result << std::endl;
+            // Frees the values.
+            isl_val_free(v_total_cost);
 
             /// @todo return the folded dsts.
 
