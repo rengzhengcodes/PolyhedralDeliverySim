@@ -23,10 +23,10 @@ struct geometry
 class Layer
 {
     public:
-        /// @brief The cost of the multicasting step for this layer.
-        const std::string multicast_formula;
         /// @brief The cost of the folding step for this layer.
         const std::string folding_formula;
+        /// @brief The cost of the multicasting step for this layer.
+        const std::string multicast_formula;
         /// @brief The collapse formulation for the next layer.
         const std::string collapse_formula;
         /// @brief The context the layer is in.
@@ -47,15 +47,16 @@ class Layer
         /** @brief Constructs a layer from a cost formulation and a folding
           * formulation.
           * 
+          * @param folding_formula The cost formula of unmulticastable datum as 
+          * an ISL string. Goes under the assumption the input is either the 
+          * starting geometry architecture or the output of a previous layer.
           * @param multicast_formula The cost formula for multicasting a datum
           * as an ISL string. Goes under the assumption that the input is of
           * the form of this Layer's ISL representation after folding.
-          * @param folding_formula The cost of unmulticastable datum as an ISL
-          * string. Goes under the assumption the input is either the starting
-          * geometry architecture or the output of a previous layer.
+          * @param ctx The context the layer is in.
           */
-        Layer(const std::string& multicast_formula, const std::string& folding_formula, isl_ctx* ctx):
-        multicast_formula(multicast_formula), folding_formula(folding_formula), ctx(ctx) {}
+        Layer(const std::string& folding_formula, const std::string& multicast_formula,  isl_ctx* ctx):
+        folding_formula(folding_formula), multicast_formula(multicast_formula), ctx(ctx) {}
         /// @brief Calculates the cost of the atomic units of this layer, then
         /// stores the cost.
         void evaluate(const std::string& s_srcs, const std::string& s_dsts)
@@ -89,16 +90,18 @@ class Layer
             /// @note Gets the total cost of the folded dsts.
             // Returns { [id, x, y] -> number_of_data}
             isl_pw_qpolynomial *p_card = isl_map_card(p_dsts);
-            std::cout << isl_pw_qpolynomial_to_str(p_card) << std::endl;
             // Calculates the cost per datum per dst cast from the trunk.
             isl_pw_qpolynomial *p_fold_cost = isl_pw_qpolynomial_read_from_str(ctx, this->folding_formula.c_str());
-            std::cout << isl_pw_qpolynomial_to_str(p_fold_cost) << std::endl;
             // Calculates the cost per dst cast from the trunk.
             isl_pw_qpolynomial *p_cost_at_dst = isl_pw_qpolynomial_mul(p_card, p_fold_cost);
-            std::cout << isl_pw_qpolynomial_to_str(p_cost_at_dst) << std::endl;
             // Calculates the cost to cast all data from the trunk.
             isl_pw_qpolynomial *p_total_cost = isl_pw_qpolynomial_sum(p_cost_at_dst);
-            std::cout << isl_pw_qpolynomial_to_str(p_total_cost) << std::endl;
+            // Reads the value from p_total_cost.
+            isl_val *v_total_cost = isl_pw_qpolynomial_eval(p_total_cost, isl_point_zero(isl_pw_qpolynomial_get_domain_space(p_total_cost)));
+            // Adds the cost to the total cost.
+            this->cost_result += isl_val_get_d(v_total_cost);
+
+            /// @todo return the folded dsts.
 
             return p_dsts;
         }
@@ -139,6 +142,7 @@ int main(int argc, char* argv[])
     // isl_map* id_to_all_dst_data = isl_map_apply_range(id_to_all_x_y, dst);
     // isl_map* id_to_missing_data = isl_map_subtract(id_to_all_dst_data, src);
     std::string multicast_formula = "{ [id, y] -> y }";
+    /// @todo Do abs not sq.
     std::string folding_formula = "{ [id, x, y] -> x^2 }";
     Layer test = Layer(multicast_formula, folding_formula, ctx);
     std::cout << "Evaluating..." << std::endl;
