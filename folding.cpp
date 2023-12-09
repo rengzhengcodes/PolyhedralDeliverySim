@@ -74,11 +74,12 @@ class Layer
         {
             // Folds the destinations onto their connected trunk.
             isl_map *folded = this->fold(s_dsts);
-            std::cout << this->cost_result << std::endl;
+            std::cout << "Crease Cost: " << this->cost_result << std::endl;
             std::cout << "Folded: " << isl_map_to_str(folded) << std::endl;
 
             // Calculates the cost to every folded node per datum.
             this->multicast(folded);
+            std::cout << "Total Cost: " << this->cost_result << std::endl;
 
             // Frees the maps.
         }
@@ -127,8 +128,13 @@ class Layer
             return p_folded_condensed;
         }
 
-        /// @brief Calculates the the cost to every folded node per datum.
-        isl_map *multicast(__isl_take isl_map *folded_geometry)
+        /** @brief Calculates the the cost to every folded node per datum and
+         * adds it to this->cost_result.
+         * 
+         * @param folded_geometry The folded destinations from this->fold.
+         * @post this->cost_result is incremented by the cost of multicasting.
+         */
+        void multicast(__isl_take isl_map *folded_geometry)
         {
             // Reads the multicast cost formulation into isl format.
             isl_pw_qpolynomial *p_cast_cost = isl_pw_qpolynomial_read_from_str(ctx, this->multicast_costs.c_str());
@@ -142,10 +148,6 @@ class Layer
             this->cost_result += isl_val_get_d(v_total_cost);
             // Frees the values.
             isl_val_free(v_total_cost);
-
-
-            
-            return folded_geometry;
         }
 };
 
@@ -182,5 +184,6 @@ int main(int argc, char* argv[])
     std::cout << "Evaluating..." << std::endl;
     test.evaluate(srcs, data);
 
-
+    ///@note Frees ctx to check for memory leaks through ISL.
+    isl_ctx_free(ctx);
 }
