@@ -61,7 +61,7 @@ class Layer
         void evaluate(const std::string& s_srcs, const std::string& s_dsts)
         {
             // Folds the destinations onto their connected trunk.
-            isl_map *folded = this->fold(s_dsts, this->folding_formula);
+            isl_map *folded = this->fold(s_dsts);
             /** @todo Sum the cost of the atomic units of this layer and add to
               * the cost_result.*/
 
@@ -81,18 +81,21 @@ class Layer
          * @return The folded destinations as an ISL string.
          * @post this->cost_result is incremented by the folding cost.
          */
-        isl_map *fold(const std::string& s_dsts, const std::string& fold_costs)
+        isl_map *fold(const std::string& s_dsts)
         {
             // Reads the dsts into isl format.
             isl_map *p_dsts = isl_map_read_from_str(ctx, s_dsts.c_str());
-            // Gets the total cost of the folded dsts.
             
+            /// @note Gets the total cost of the folded dsts.
             // Returns { [id, x, y] -> number_of_data}
             isl_pw_qpolynomial *p_card = isl_map_card(p_dsts);
+            std::cout << isl_pw_qpolynomial_to_str(p_card) << std::endl;
             // Calculates the cost per datum per dst cast from the trunk.
-            isl_pw_qpolynomial *p_cost = isl_pw_qpolynomial_read_from_str(ctx, fold_costs.c_str());
+            isl_pw_qpolynomial *p_fold_cost = isl_pw_qpolynomial_read_from_str(ctx, this->folding_formula.c_str());
+            std::cout << isl_pw_qpolynomial_to_str(p_fold_cost) << std::endl;
             // Calculates the cost per dst cast from the trunk.
-            isl_pw_qpolynomial *p_cost_at_dst = isl_pw_qpolynomial_mul(p_card, p_cost);
+            isl_pw_qpolynomial *p_cost_at_dst = isl_pw_qpolynomial_mul(p_card, p_fold_cost);
+            std::cout << isl_pw_qpolynomial_to_str(p_cost_at_dst) << std::endl;
             // Calculates the cost to cast all data from the trunk.
             isl_pw_qpolynomial *p_total_cost = isl_pw_qpolynomial_sum(p_cost_at_dst);
             std::cout << isl_pw_qpolynomial_to_str(p_total_cost) << std::endl;
@@ -136,7 +139,7 @@ int main(int argc, char* argv[])
     // isl_map* id_to_all_dst_data = isl_map_apply_range(id_to_all_x_y, dst);
     // isl_map* id_to_missing_data = isl_map_subtract(id_to_all_dst_data, src);
     std::string multicast_formula = "{ [id, y] -> y }";
-    std::string folding_formula = "{ [id, x, y] -> x }";
+    std::string folding_formula = "{ [id, x, y] -> x^2 }";
     Layer test = Layer(multicast_formula, folding_formula, ctx);
     std::cout << "Evaluating..." << std::endl;
     test.evaluate(srcs, data);
