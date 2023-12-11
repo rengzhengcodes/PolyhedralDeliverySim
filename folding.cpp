@@ -28,7 +28,7 @@ struct fold_struct
 };
 typedef std::unique_ptr<fold_struct> fold_result;
 
-class Layer
+class BranchTwig
 {
     public:
         /// @brief The cost formula of the folding step for this layer.
@@ -57,7 +57,7 @@ class Layer
           * the form of this Layer's ISL representation after folding.
           * @param ctx The context the layer is in.
           */
-        Layer(
+        BranchTwig(
             const std::string& crease_costs, const std::string& fold_formula,
             const std::string& multicast_costs, isl_ctx* ctx
         ):
@@ -191,7 +191,7 @@ int main(int argc, char* argv[])
     std::string crease_costs = "{ [id, x, y] -> x^2 }";
     std::string fold_formula = "{ [id, x, y] -> [id, y] }";
     std::string multicast_costs = "{ [id, y] -> y }";
-    Layer test = Layer(crease_costs, fold_formula, multicast_costs, ctx);
+    BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, ctx);
     std::cout << "Evaluating..." << std::endl;
     test.evaluate(srcs, data);
 
