@@ -78,6 +78,10 @@ class BranchTwig
             long casting_cost = this->multicast(fold_res->folded_repr);
             std::cout << "Casting Cost: " << casting_cost << std::endl;
 
+            // Calculates the total cost of the layer.
+            long total_cost = fold_res->cost + casting_cost;
+
+            // Calculates the requests that are not satisfied by the layer.
             ///@todo Collapse the folded destinations into the next layer.
 
             // Frees the maps.
