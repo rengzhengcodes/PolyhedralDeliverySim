@@ -180,6 +180,19 @@ class BranchTwig
          * 
          * 
          */
+        binding collapse(const std::string& s_srcs, const std::string& s_dsts)
+        {
+            // Reads the srcs and dsts into isl format.
+            isl_map *p_srcs = isl_map_read_from_str(ctx, s_srcs.c_str());
+            isl_map *p_dsts = isl_map_read_from_str(ctx, s_dsts.c_str());
+            // Reads the collapse formula into isl format.
+            isl_map *p_collapse = isl_map_read_from_str(ctx, this->collapse_formula.c_str());
+
+            /** @note Initializes the collapsed binding abstraction for the next 
+              * layer. */
+            binding collapsed;
+            return collapsed;
+        }
 
 };
 
@@ -194,12 +207,7 @@ int main(int argc, char* argv[])
     std::string data = R"DST(
         {[id, x, y] -> [data]: id = 0 and (-1 = x or x = 1) and 0 <= y <= 1 and data = y}
     )DST";
-    // isl_map *dst = isl_map_read_from_str(ctx, data.c_str());
-    // std::string fold = R"FOLD(
-    //     {[data] -> [id, y] : y = y'}
-    // )FOLD";
-    // std::string fold_data = "{ [id, y] -> [id, x, y] }";
-    // std::string all_after = "{ [id, y] -> [id, y'] : y' > y }";
+    binding test_case = binding(new binding_struct{srcs, data});
 
     // isl_map* id_to_all_x_y = isl_map_read_from_str(
     //     ctx,
@@ -214,7 +222,7 @@ int main(int argc, char* argv[])
 
     BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, ctx);
     std::cout << "Evaluating..." << std::endl;
-    test.evaluate(binding(new binding_struct{srcs, data}));
+    test.evaluate(test_case);
 
     ///@note Frees ctx to check for memory leaks through ISL.
     isl_ctx_free(ctx);
