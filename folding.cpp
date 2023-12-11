@@ -16,8 +16,8 @@
 /// @brief Strings representing the src and dst datum holds/requests in ISL.
 struct binding
 {
-    std::string srcs;
-    std::string dsts;
+    const std::string srcs;
+    const std::string dsts;
 };
 // @brief Defines the struct that comprises the result of folding and the unique
 // ptr to it that represents what is returned by fold.
@@ -70,16 +70,16 @@ class BranchTwig
         void evaluate(const std::string& s_srcs, const std::string& s_dsts)
         {
             // Folds the destinations onto their connected trunk.
-            fold_result fold_res = this->fold(s_dsts);
+            const fold_result fold_res = this->fold(s_dsts);
             std::cout << "Crease Cost: " << fold_res->cost << std::endl;
             std::cout << "Folded: " << fold_res->folded_repr << std::endl;
 
             // Calculates the cost to every folded node per datum.
-            long casting_cost = this->multicast(fold_res->folded_repr);
+            const long casting_cost = this->multicast(fold_res->folded_repr);
             std::cout << "Casting Cost: " << casting_cost << std::endl;
 
             // Calculates the total cost of the layer.
-            long total_cost = fold_res->cost + casting_cost;
+            const long total_cost = fold_res->cost + casting_cost;
 
             // Calculates the requests that are not satisfied by the layer.
             ///@todo Collapse the folded destinations into the next layer.
@@ -164,6 +164,14 @@ class BranchTwig
 
             return cost;
         }
+
+        /**
+         * @brief Identifies the requests that are not satisfied by the layer and
+         * passes them as dsts to the next layer. Also calculates the cost of 
+         * getting all srcs to a position accessible by the next layer.
+         * 
+         * 
+         */
 };
 
 int main(int argc, char* argv[])
