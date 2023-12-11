@@ -1,6 +1,8 @@
-/** @brief This class represents a "layer" of analysis. It calculates the
- *  cost of the atomic units of this layer, then folds them into a problem
- * formulation for the next layer **/
+/** 
+ * @brief This class represents a "layer" of analysis. It calculates the
+ * cost of the atomic units of this layer, then folds them into a problem
+ * formulation for the next layer.
+ */
 #include "folding.h"
 #include <memory>
 #include <string>
@@ -21,22 +23,33 @@ struct binding_struct
     const std::string dsts;
 };
 typedef std::unique_ptr<binding_struct> binding;
-/** @brief Defines the struct that comprises the result of folding and the unique
-  * ptr to it that represents what is returned by fold. */
+/** 
+ * @brief Defines the struct that comprises the result of folding and the unique
+ * ptr to it that represents what is returned by fold.
+ */
 struct fold_struct
 {
     const long cost;
     const std::string folded_repr;
 };
 typedef std::unique_ptr<fold_struct> fold_result;
+/// @brief Defines the struct characterizing the collapsing behavior of a layer.
+struct collapse_struct
+{
+    const std::string src_collapse;
+    const std::string dst_collapse;
+};
+typedef std::unique_ptr<collapse_struct> collapse;
 
 class BranchTwig
 {
     public:
         /// @brief The cost formula of the folding step for this layer.
         const std::string crease_costs;
-        /** @brief The folding action to a multicastable representation after
-          * calculating the cost of folding. */
+        /** 
+         * @brief The folding action to a multicastable representation after
+         * calculating the cost of folding. 
+         */
         const std::string fold_formula;
         /// @brief The cost formula of the multicasting step for this layer.
         const std::string multicast_costs;
@@ -45,20 +58,21 @@ class BranchTwig
         /// @brief The context the layer is in.
         isl_ctx *const ctx;
     public:
-        /** @brief Constructs a layer from a cost formulation and a folding
-          * formulation.
-          * 
-          * @param crease_costs The cost formula of unmulticastable datum as 
-          * an ISL string. Goes under the assumption the input is either the 
-          * starting geometry architecture or the output of a previous layer.
-          * @param fold_formula The isl_map in a string representation that
-          * projects away the unmulticastable portions of the path of a datum to
-          * a dst. This is what we refer to as "folding".
-          * @param multicast_formula The cost formula for multicasting a datum
-          * as an ISL string. Goes under the assumption that the input is of
-          * the form of this Layer's ISL representation after folding.
-          * @param ctx The context the layer is in.
-          */
+        /** 
+         * @brief Constructs a layer from a cost formulation and a folding
+         * formulation.
+         * 
+         * @param crease_costs The cost formula of unmulticastable datum as 
+         * an ISL string. Goes under the assumption the input is either the 
+         * starting geometry architecture or the output of a previous layer.
+         * @param fold_formula The isl_map in a string representation that
+         * projects away the unmulticastable portions of the path of a datum to
+         * a dst. This is what we refer to as "folding".
+         * @param multicast_formula The cost formula for multicasting a datum
+         * as an ISL string. Goes under the assumption that the input is of
+         * the form of this Layer's ISL representation after folding.
+         * @param ctx The context the layer is in.
+         */
         BranchTwig(
             const std::string& crease_costs, const std::string& fold_formula,
             const std::string& multicast_costs, const std::string& collapse_formula, 
@@ -67,15 +81,16 @@ class BranchTwig
         crease_costs(crease_costs), fold_formula(fold_formula),
         multicast_costs(multicast_costs), collapse_formula(collapse_formula), ctx(ctx) {}
 
-        /** @brief Calculates the cost of the atomic units of this layer, then
-          * returns a struct of the binding cost at layer and the next layer's
-          * abstraction as a string. 
-          * 
-          * @param s_srcs The sources of the bindings at this layer as an ISL string.
-          * @param s_dsts The destinations of the bindings at this layer as an ISL string.
-          * 
-          * @return A struct of the binding abstraction for the next layer.
-          * */
+        /** 
+         * @brief Calculates the cost of the atomic units of this layer, then
+         * returns a struct of the binding cost at layer and the next layer's
+         * abstraction as a string. 
+         * 
+         * @param s_srcs The sources of the bindings at this layer as an ISL string.
+         * @param s_dsts The destinations of the bindings at this layer as an ISL string.
+         * 
+         * @return A struct of the binding abstraction for the next layer.
+         */
         void evaluate(const std::string& s_srcs, const std::string& s_dsts)
         {
             // Folds the destinations onto their connected trunk.
@@ -103,7 +118,8 @@ class BranchTwig
             this->evaluate(b->srcs, b->dsts);
         }
     private:
-        /** @brief Folds the destinations onto their connected trunk. 
+        /** 
+         * @brief Folds the destinations onto their connected trunk. 
          * 
          * @param s_dsts The destinations to fold as an ISL string.
          * @return A unique_ptr to a struct holding costs of the folding step and
@@ -153,7 +169,8 @@ class BranchTwig
             return result;
         }
 
-        /** @brief Calculates the the cost to every folded node per datum.
+        /** 
+         * @brief Calculates the the cost to every folded node per datum.
          * 
          * @param folded_geometry The folded destinations from this->fold(*).
          * @return The cost of multicasting to the folded destinations.
@@ -165,7 +182,8 @@ class BranchTwig
             // Reads the multicast cost formulation into isl format.
             isl_pw_qpolynomial *p_cast_cost = isl_pw_qpolynomial_read_from_str(ctx, this->multicast_costs.c_str());
 
-            /** @note Calculates the cost of multicasting to the folded dsts
+            /** 
+             * @note Calculates the cost of multicasting to the folded dsts
              * according to architecture spec. */
             // Applies the cost formulation to the folded dsts.
             isl_pw_qpolynomial *p_cost_applied = isl_map_apply_pw_qpolynomial(p_folded_bindings, p_cast_cost);
@@ -208,8 +226,10 @@ class BranchTwig
             // Frees the maps.
             isl_map_free(p_missing);
 
-            /** @note Initializes the collapsed binding abstraction for the next 
-              * layer. */
+            /** 
+             * @note Initializes the collapsed binding abstraction for the next 
+             * layer.
+             */
             binding collapsed = binding(new binding_struct{s_srcs, s_missing});
             return collapsed;
         }
