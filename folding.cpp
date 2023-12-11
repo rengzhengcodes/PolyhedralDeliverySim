@@ -64,8 +64,9 @@ class Layer
         crease_costs(crease_costs), fold_formula(fold_formula),
         multicast_costs(multicast_costs), ctx(ctx) {}
 
-        /// @brief Calculates the cost of the atomic units of this layer, then
-        /// stores the cost.
+        /** @brief Calculates the cost of the atomic units of this layer, then
+          * returns a struct of the binding cost at layer and the next layer's
+          * abstraction as a string. */
         void evaluate(const std::string& s_srcs, const std::string& s_dsts)
         {
             // Folds the destinations onto their connected trunk.
@@ -143,6 +144,9 @@ class Layer
             isl_map *p_folded_bindings = isl_map_read_from_str(ctx, s_folded_bindings.c_str());
             // Reads the multicast cost formulation into isl format.
             isl_pw_qpolynomial *p_cast_cost = isl_pw_qpolynomial_read_from_str(ctx, this->multicast_costs.c_str());
+
+            /** @note Calculates the cost of multicasting to the folded dsts
+             * according to architecture spec. */
             // Applies the cost formulation to the folded dsts.
             isl_pw_qpolynomial *p_cost_applied = isl_map_apply_pw_qpolynomial(p_folded_bindings, p_cast_cost);
             // Sums all the costs.
