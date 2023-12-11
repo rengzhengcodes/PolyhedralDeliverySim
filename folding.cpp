@@ -4,21 +4,23 @@
 #include "folding.h"
 #include <memory>
 #include <string>
+
 #include <isl/aff.h>
 #include <isl/map.h>
 #include <isl/polynomial.h>
 #include <isl/set.h>
 
-#include <barvinok/polylib.h>
-#include <barvinok/barvinok.h>
 #include <barvinok/isl.h>
+#include <barvinok/barvinok.h>
+#include <barvinok/polylib.h>
 
 /// @brief Strings representing the src and dst datum holds/requests in ISL.
-struct binding
+struct binding_struct
 {
     const std::string srcs;
     const std::string dsts;
 };
+typedef std::unique_ptr<binding_struct> binding;
 /** @brief Defines the struct that comprises the result of folding and the unique
   * ptr to it that represents what is returned by fold. */
 struct fold_struct
@@ -172,6 +174,7 @@ class BranchTwig
          * 
          * 
          */
+
 };
 
 int main(int argc, char* argv[])
