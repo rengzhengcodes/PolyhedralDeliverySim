@@ -33,8 +33,8 @@ class BranchTwig
     public:
         /// @brief The cost formula of the folding step for this layer.
         const std::string crease_costs;
-        /// @brief The folding action to a multicastable representation after
-        /// calculating the cost of folding.
+        /** @brief The folding action to a multicastable representation after
+          * calculating the cost of folding. */
         const std::string fold_formula;
         /// @brief The cost formula of the multicasting step for this layer.
         const std::string multicast_costs;
