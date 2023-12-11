@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
     // Creates an isl context.
     isl_ctx *ctx = isl_ctx_alloc();
     std::string srcs = R"SRC(
-        {[id] -> [data] : id = 0 and 0 <= data <= 1}
+        {[id] -> [data] : id = 0 and data = id}
     )SRC";
     // isl_map *src = isl_map_read_from_str(ctx, srcs.c_str());
     std::string data = R"DST(
