@@ -14,11 +14,19 @@
 #include <barvinok/isl.h>
 
 /// @brief Strings representing the src and dst datum holds/requests in ISL.
-struct geometry
+struct binding
 {
     std::string srcs;
     std::string dsts;
 };
+// @brief Defines the struct that comprises the result of folding and the unique
+// ptr to it that represents what is returned by fold.
+struct fold_struct
+{
+    const long cost;
+    const std::string folded_repr;
+};
+typedef std::unique_ptr<fold_struct> fold_result;
 
 class Layer
 {
@@ -34,18 +42,6 @@ class Layer
         const std::string collapse_formula;
         /// @brief The context the layer is in.
         isl_ctx *const ctx;
-    private:
-        /// @brief This is the result of the cost for computations of this layer
-        /// specifically, excluding the cost of the atomic units of this layer.
-        double cost_result = 0;
-        /// @brief Stores the cost of each operation in the layer.
-        
-        /// @brief This is the result of folding the cost of the atomic units
-        /// of this layer into the folding formulation for the next layer.
-        double latency = 0;
-        std::string fold_result;
-        /// @brief Whether this layer is dead.
-        bool dead = false;
     public:
         /** @brief Constructs a layer from a cost formulation and a folding
           * formulation.
@@ -63,8 +59,8 @@ class Layer
           */
         Layer(
             const std::string& crease_costs, const std::string& fold_formula,
-            const std::string& multicast_costs,
-        isl_ctx* ctx):
+            const std::string& multicast_costs, isl_ctx* ctx
+        ):
         crease_costs(crease_costs), fold_formula(fold_formula),
         multicast_costs(multicast_costs), ctx(ctx) {}
 
@@ -73,27 +69,26 @@ class Layer
         void evaluate(const std::string& s_srcs, const std::string& s_dsts)
         {
             // Folds the destinations onto their connected trunk.
-            isl_map *folded = this->fold(s_dsts);
-            std::cout << "Crease Cost: " << this->cost_result << std::endl;
-            std::cout << "Folded: " << isl_map_to_str(folded) << std::endl;
+            fold_result fold_res = this->fold(s_dsts);
+            std::cout << "Crease Cost: " << fold_res->cost << std::endl;
+            std::cout << "Folded: " << fold_res->folded_repr << std::endl;
 
             // Calculates the cost to every folded node per datum.
-            this->multicast(folded);
-            std::cout << "Total Cost: " << this->cost_result << std::endl;
+            long casting_cost = this->multicast(fold_res->folded_repr);
+            std::cout << "Casting Cost: " << casting_cost << std::endl;
 
             ///@todo Collapse the folded destinations into the next layer.
 
             // Frees the maps.
         }
     private:
-        /** @brief Folds the destinations onto their connected trunk. Updates
-         * this->cost_result by adding the cost of casting to the folded dsts.
+        /** @brief Folds the destinations onto their connected trunk. 
          * 
          * @param s_dsts The destinations to fold as an ISL string.
-         * @return The folded destinations as an ISL string.
-         * @post this->cost_result is incremented by the folding cost.
+         * @return A unique_ptr to a struct holding costs of the folding step and
+         * the folded destinations as an ISL string.
          */
-        isl_map *fold(const std::string& dsts)
+        fold_result fold(const std::string& dsts)
         {
             // Reads the dsts into isl format.
             isl_map *p_dsts = isl_map_read_from_str(ctx, dsts.c_str());
@@ -109,8 +104,8 @@ class Layer
             isl_pw_qpolynomial *p_total_cost = isl_pw_qpolynomial_sum(p_cost_at_dst);
             // Reads the value from p_total_cost.
             isl_val *v_total_cost = isl_pw_qpolynomial_eval(p_total_cost, isl_point_zero(isl_pw_qpolynomial_get_domain_space(p_total_cost)));
-            // Adds the cost to the total cost.
-            this->cost_result += isl_val_get_d(v_total_cost);
+            // Initializes the variable storing the cost of folding.
+            long fold_cost = isl_val_get_num_si(v_total_cost);
             // Frees the values.
             isl_val_free(v_total_cost);
 
@@ -126,30 +121,40 @@ class Layer
             isl_map *p_all_after = isl_map_read_from_str(ctx, all_after.c_str());
             isl_map *p_max_y = isl_map_apply_range(isl_map_copy(p_folded), p_all_after);
             isl_map *p_folded_condensed = isl_map_subtract(p_folded, p_max_y);
+            // Converts p_folded_condensed to a string.
+            std::string s_folded_condensed = isl_map_to_str(p_folded_condensed);
+            // Frees the maps.
+            isl_map_free(p_folded_condensed);
 
-            return p_folded_condensed;
+            // Initializes the struct ptr to return.
+            fold_result result = fold_result(new fold_struct{fold_cost, s_folded_condensed});
+
+            return result;
         }
 
-        /** @brief Calculates the the cost to every folded node per datum and
-         * adds it to this->cost_result.
+        /** @brief Calculates the the cost to every folded node per datum.
          * 
-         * @param folded_geometry The folded destinations from this->fold.
-         * @post this->cost_result is incremented by the cost of multicasting.
+         * @param folded_geometry The folded destinations from this->fold(*).
+         * @return The cost of multicasting to the folded destinations.
          */
-        void multicast(__isl_take isl_map *folded_geometry)
+        long multicast(const std::string& s_folded_bindings)
         {
+            // Reads the folded destinations into isl format.
+            isl_map *p_folded_bindings = isl_map_read_from_str(ctx, s_folded_bindings.c_str());
             // Reads the multicast cost formulation into isl format.
             isl_pw_qpolynomial *p_cast_cost = isl_pw_qpolynomial_read_from_str(ctx, this->multicast_costs.c_str());
             // Applies the cost formulation to the folded dsts.
-            isl_pw_qpolynomial *p_cost_applied = isl_map_apply_pw_qpolynomial(folded_geometry, p_cast_cost);
+            isl_pw_qpolynomial *p_cost_applied = isl_map_apply_pw_qpolynomial(p_folded_bindings, p_cast_cost);
             // Sums all the costs.
             isl_pw_qpolynomial *p_total_cost = isl_pw_qpolynomial_sum(p_cost_applied);
             // Evaluates the cost.
             isl_val *v_total_cost = isl_pw_qpolynomial_eval(p_total_cost, isl_point_zero(isl_pw_qpolynomial_get_domain_space(p_total_cost)));
-            // Adds the cost to the total cost.
-            this->cost_result += isl_val_get_d(v_total_cost);
+            // Initializes the return value to the cost of multicasting.
+            long cost = isl_val_get_d(v_total_cost);
             // Frees the values.
             isl_val_free(v_total_cost);
+
+            return cost;
         }
 };
 
