@@ -90,7 +90,7 @@ class BranchTwig
         }
 
         /// @brief Wraps evaluate by accepting the binding as a struct.
-        void evaluate(const binding& b)
+        void inline evaluate(const binding& b)
         {
             this->evaluate(b->srcs, b->dsts);
         }
