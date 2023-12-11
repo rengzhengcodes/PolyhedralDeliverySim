@@ -88,6 +88,12 @@ class BranchTwig
 
             // Frees the maps.
         }
+
+        /// @brief Wraps evaluate by accepting the binding as a struct.
+        void evaluate(const binding& b)
+        {
+            this->evaluate(b->srcs, b->dsts);
+        }
     private:
         /** @brief Folds the destinations onto their connected trunk. 
          * 
@@ -208,7 +214,7 @@ int main(int argc, char* argv[])
 
     BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, ctx);
     std::cout << "Evaluating..." << std::endl;
-    test.evaluate(srcs, data);
+    test.evaluate(binding(new binding_struct{srcs, data}));
 
     ///@note Frees ctx to check for memory leaks through ISL.
     isl_ctx_free(ctx);
