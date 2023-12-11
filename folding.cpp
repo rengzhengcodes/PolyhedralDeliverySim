@@ -61,10 +61,11 @@ class BranchTwig
           */
         BranchTwig(
             const std::string& crease_costs, const std::string& fold_formula,
-            const std::string& multicast_costs, isl_ctx* ctx
+            const std::string& multicast_costs, const std::string& collapse_formula, 
+            isl_ctx* ctx
         ):
         crease_costs(crease_costs), fold_formula(fold_formula),
-        multicast_costs(multicast_costs), ctx(ctx) {}
+        multicast_costs(multicast_costs), collapse_formula(collapse_formula), ctx(ctx) {}
 
         /** @brief Calculates the cost of the atomic units of this layer, then
           * returns a struct of the binding cost at layer and the next layer's
@@ -91,8 +92,9 @@ class BranchTwig
 
             // Calculates the requests that are not satisfied by the layer.
             ///@todo Collapse the folded destinations into the next layer.
-
-            // Frees the maps.
+            const binding collapsed = this->collapse(s_srcs, s_dsts);
+            std::cout << "Collapsed: " << collapsed->srcs << std::endl;
+            std::cout << "Missing: " << collapsed->dsts << std::endl;
         }
 
         /// @brief Wraps evaluate by accepting the binding as a struct.
@@ -205,7 +207,7 @@ class BranchTwig
 
             /** @note Initializes the collapsed binding abstraction for the next 
               * layer. */
-            binding collapsed;
+            binding collapsed = binding(new binding_struct{s_srcs, s_missing});
             return collapsed;
         }
 
@@ -234,8 +236,9 @@ int main(int argc, char* argv[])
     std::string crease_costs = "{ [id, x, y] -> x: x >= 0; [id, x, y] -> -x: x < 0 }";
     std::string fold_formula = "{ [id, x, y] -> [id, y] }";
     std::string multicast_costs = "{ [id, y] -> y }";
+    std::string collapse_formula = "{ [id] -> [id, x, y] }";
 
-    BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, ctx);
+    BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, collapse_formula, ctx);
     std::cout << "Evaluating..." << std::endl;
     test.evaluate(test_case);
 
