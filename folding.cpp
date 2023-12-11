@@ -19,8 +19,8 @@ struct binding
     const std::string srcs;
     const std::string dsts;
 };
-// @brief Defines the struct that comprises the result of folding and the unique
-// ptr to it that represents what is returned by fold.
+/** @brief Defines the struct that comprises the result of folding and the unique
+  * ptr to it that represents what is returned by fold. */
 struct fold_struct
 {
     const long cost;
@@ -166,9 +166,9 @@ class BranchTwig
         }
 
         /**
-         * @brief Identifies the requests that are not satisfied by the layer and
-         * passes them as dsts to the next layer. Also calculates the cost of 
-         * getting all srcs to a position accessible by the next layer.
+         * @brief Identifies the requests that are not satisfied by the layer 
+         * and passes them as dsts to the next layer. Also calculates the cost 
+         * of getting all srcs to a position accessible by the next layer.
          * 
          * 
          */
