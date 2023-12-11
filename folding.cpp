@@ -68,7 +68,13 @@ class BranchTwig
 
         /** @brief Calculates the cost of the atomic units of this layer, then
           * returns a struct of the binding cost at layer and the next layer's
-          * abstraction as a string. */
+          * abstraction as a string. 
+          * 
+          * @param s_srcs The sources of the bindings at this layer as an ISL string.
+          * @param s_dsts The destinations of the bindings at this layer as an ISL string.
+          * 
+          * @return A struct of the binding abstraction for the next layer.
+          * */
         void evaluate(const std::string& s_srcs, const std::string& s_dsts)
         {
             // Folds the destinations onto their connected trunk.
@@ -178,7 +184,7 @@ class BranchTwig
          * and passes them as dsts to the next layer. Also calculates the cost 
          * of getting all srcs to a position accessible by the next layer.
          * 
-         * 
+         * @return The collapsed binding abstraction for the next layer.
          */
         binding collapse(const std::string& s_srcs, const std::string& s_dsts)
         {
@@ -187,6 +193,15 @@ class BranchTwig
             isl_map *p_dsts = isl_map_read_from_str(ctx, s_dsts.c_str());
             // Reads the collapse formula into isl format.
             isl_map *p_collapse = isl_map_read_from_str(ctx, this->collapse_formula.c_str());
+
+            // Collapses all dst requests to the same format as their SRCs.
+            isl_map *p_collapsed = isl_map_apply_range(p_collapse, p_dsts);
+            // Calculates the requests that are not satisfied by the layer.
+            isl_map *p_missing = isl_map_subtract(p_collapsed, p_srcs);
+            // Converts p_missing to a string.
+            std::string s_missing = isl_map_to_str(p_missing);
+            // Frees the maps.
+            isl_map_free(p_missing);
 
             /** @note Initializes the collapsed binding abstraction for the next 
               * layer. */
