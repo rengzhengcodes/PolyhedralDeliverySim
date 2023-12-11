@@ -186,6 +186,9 @@ class BranchTwig
          * and passes them as dsts to the next layer. Also calculates the cost 
          * of getting all srcs to a position accessible by the next layer.
          * 
+         * @param s_srcs The sources of the bindings at this layer as an ISL string.
+         * @param s_dsts The destinations of the bindings at this layer as an ISL string.
+         * 
          * @return The collapsed binding abstraction for the next layer.
          */
         binding collapse(const std::string& s_srcs, const std::string& s_dsts)
@@ -210,7 +213,6 @@ class BranchTwig
             binding collapsed = binding(new binding_struct{s_srcs, s_missing});
             return collapsed;
         }
-
 };
 
 int main(int argc, char* argv[])
