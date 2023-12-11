@@ -192,9 +192,10 @@ int main(int argc, char* argv[])
     // isl_map* id_to_missing_data = isl_map_subtract(id_to_all_dst_data, src);
 
     /// @todo Do abs not sq.
-    std::string crease_costs = "{ [id, x, y] -> x^2 }";
+    std::string crease_costs = "{ [id, x, y] -> x: x >= 0; [id, x, y] -> -x: x < 0 }";
     std::string fold_formula = "{ [id, x, y] -> [id, y] }";
     std::string multicast_costs = "{ [id, y] -> y }";
+
     BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, ctx);
     std::cout << "Evaluating..." << std::endl;
     test.evaluate(srcs, data);
