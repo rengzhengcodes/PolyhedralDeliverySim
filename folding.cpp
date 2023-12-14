@@ -153,11 +153,15 @@ class BranchTwig
             isl_map *p_data_to_dsts = isl_map_reverse(p_dsts);
             // Folds the dsts onto the trunk.
             isl_map *p_folded = isl_map_apply_range(p_data_to_dsts, p_fold);
+            p_folded = isl_map_reverse(p_folded);
+            std::cout << "P_Folded: " << isl_map_to_str(p_folded) << std::endl;
             // Gets the largest y value per datum.
             std::string all_after = "{ [id, y] -> [id, y'] : y' > y }";
             isl_map *p_all_after = isl_map_read_from_str(ctx, all_after.c_str());
-            isl_map *p_max_y = isl_map_apply_range(isl_map_copy(p_folded), p_all_after);
+            isl_map *p_max_y = isl_map_apply_range(p_all_after, isl_map_copy(p_folded));
+            std::cout << "Max Y: " << isl_map_to_str(p_max_y) << std::endl;
             isl_map *p_folded_condensed = isl_map_subtract(p_folded, p_max_y);
+            p_folded_condensed = isl_map_reverse(p_folded_condensed);
             // Converts p_folded_condensed to a string.
             std::string s_folded_condensed = isl_map_to_str(p_folded_condensed);
             // Frees the maps.
@@ -179,6 +183,7 @@ class BranchTwig
         {
             // Reads the folded destinations into isl format.
             isl_map *p_folded_bindings = isl_map_read_from_str(ctx, s_folded_bindings.c_str());
+            std::cout << s_folded_bindings << std::endl;
             // Reads the multicast cost formulation into isl format.
             isl_pw_qpolynomial *p_cast_cost = isl_pw_qpolynomial_read_from_str(ctx, this->multicast_costs.c_str());
 
@@ -257,7 +262,7 @@ int main(int argc, char* argv[])
 
     std::string crease_costs = "{ [id, x, y] -> x: x >= 0; [id, x, y] -> -x: x < 0 }";
     std::string fold_formula = "{ [id, x, y] -> [id, y] }";
-    std::string multicast_costs = "{ [id, y] -> y }";
+    std::string multicast_costs = "{ [id, y] -> y+1 }";
     std::string collapse_formula = "{ [id] -> [id, x, y] }";
 
     BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, collapse_formula, ctx);
