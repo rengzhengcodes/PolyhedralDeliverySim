@@ -267,6 +267,7 @@ int main(int argc, char* argv[])
     binding test_case = binding(new binding_struct{srcs, data});
 
     // Calculates the cost formulas of the first layer.
+    /// @note Read right to left like function composition.
     std::string crease_costs = "{ [id, x, y] -> x: x >= 0; [id, x, y] -> -x: x < 0 }";
     std::string fold_formula = "{ [id, x, y] -> [id, y] }";
     std::string multicast_costs = "{ [id, y] -> y+1 }";
