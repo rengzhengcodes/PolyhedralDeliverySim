@@ -36,10 +36,10 @@ typedef std::unique_ptr<fold_struct> fold_result;
 /// @brief Defines the struct characterizing the collapsing behavior of a layer.
 struct collapse_struct
 {
-    const std::string src_collapse;
-    const std::string dst_collapse;
+    const std::string src_collapser;
+    const std::string dst_collapser;
 };
-typedef std::unique_ptr<collapse_struct> collapse;
+typedef std::shared_ptr<collapse_struct> collapse;
 
 class BranchTwig
 {
@@ -53,8 +53,10 @@ class BranchTwig
         const std::string fold_formula;
         /// @brief The cost formula of the multicasting step for this layer.
         const std::string multicast_costs;
-        /// @brief The collapse formulation for the next layer.
-        const std::string collapse_formula;
+        /// @brief The src collapse formulation for the next layer.
+        const std::string src_collapser;
+        /// @brief The dst collapse formulation for the next layer.
+        const std::string dst_collapser;
         /// @brief The context the layer is in.
         isl_ctx *const ctx;
     public:
@@ -71,15 +73,19 @@ class BranchTwig
          * @param multicast_formula The cost formula for multicasting a datum
          * as an ISL string. Goes under the assumption that the input is of
          * the form of this Layer's ISL representation after folding.
+         * @param collapse_formula The collapse formulation for how to translate
+         * the srcs and dsts of this layer to the inputs that work with next
+         * layer.
          * @param ctx The context the layer is in.
          */
         BranchTwig(
             const std::string& crease_costs, const std::string& fold_formula,
-            const std::string& multicast_costs, const std::string& collapse_formula, 
-            isl_ctx* ctx
+            const std::string& multicast_costs, const collapse& collapse_formulas, 
+            isl_ctx *const ctx
         ):
-        crease_costs(crease_costs), fold_formula(fold_formula),
-        multicast_costs(multicast_costs), collapse_formula(collapse_formula), ctx(ctx) {}
+        crease_costs(crease_costs), fold_formula(fold_formula), multicast_costs(multicast_costs), 
+        src_collapser(collapse_formulas->src_collapser), dst_collapser(collapse_formulas->dst_collapser),
+        ctx(ctx) {}
 
         /** 
          * @brief Calculates the cost of the atomic units of this layer, then
@@ -156,6 +162,7 @@ class BranchTwig
             p_folded = isl_map_reverse(p_folded);
             std::cout << "P_Folded: " << isl_map_to_str(p_folded) << std::endl;
             // Gets the largest y value per datum.
+            /// @todo Functionalize this.
             std::string all_after = "{ [id, y] -> [id, y'] : y' > y }";
             isl_map *p_all_after = isl_map_read_from_str(ctx, all_after.c_str());
             isl_map *p_max_y = isl_map_apply_range(p_all_after, isl_map_copy(p_folded));
@@ -219,23 +226,28 @@ class BranchTwig
             // Reads the srcs and dsts into isl format.
             isl_map *p_srcs = isl_map_read_from_str(ctx, s_srcs.c_str());
             isl_map *p_dsts = isl_map_read_from_str(ctx, s_dsts.c_str());
-            // Reads the collapse formula into isl format.
-            isl_map *p_collapse = isl_map_read_from_str(ctx, this->collapse_formula.c_str());
+            // Reads the collapse formulas into isl format.
+            isl_map *p_collapse_dsts = isl_map_read_from_str(
+                ctx, this->dst_collapser.c_str()
+            );
+            isl_map *p_collapse_srcs = isl_map_read_from_str(
+                ctx, this->src_collapser.c_str()
+            );
 
+            // Collapses all src requests.
+            isl_map *p_collapsed_srcs = isl_map_apply_range(p_collapse_srcs, p_srcs);
             // Collapses all dst requests to the same format as their SRCs.
-            isl_map *p_collapsed = isl_map_apply_range(p_collapse, p_dsts);
-            // Calculates the requests that are not satisfied by the layer.
-            isl_map *p_missing = isl_map_subtract(p_collapsed, p_srcs);
-            // Converts p_missing to a string.
-            std::string s_missing = isl_map_to_str(p_missing);
-            // Frees the maps.
-            isl_map_free(p_missing);
+            isl_map *p_collapsed_dsts = isl_map_apply_range(p_collapse_dsts, p_dsts);
 
-            /** 
-             * @note Initializes the collapsed binding abstraction for the next 
-             * layer.
-             */
-            binding collapsed = binding(new binding_struct{s_srcs, s_missing});
+            // Calculates the requests that are not satisfied by the layer.
+            isl_map *p_missing_data = isl_map_subtract(p_collapsed_dsts, p_collapsed_srcs);
+            // Converts p_missing to a string.
+            std::string s_missing_data = isl_map_to_str(p_missing_data);
+            // Frees the maps.
+            isl_map_free(p_missing_data);
+
+            // Initializes the collapsed binding abstraction for the next layer.
+            binding collapsed = binding(new binding_struct{s_srcs, s_missing_data});
             return collapsed;
         }
 };
@@ -244,28 +256,27 @@ int main(int argc, char* argv[])
 {
     // Creates an isl context.
     isl_ctx *ctx = isl_ctx_alloc();
+
+    // Creates the binding abstraction for the first layer.
     std::string srcs = R"SRC(
         {[id] -> [data] : id = 0 and data = id}
     )SRC";
-    // isl_map *src = isl_map_read_from_str(ctx, srcs.c_str());
     std::string data = R"DST(
         {[id, x, y] -> [data]: id = 0 and (-1 = x or x = 1) and 0 <= y <= 1 and data = y}
     )DST";
     binding test_case = binding(new binding_struct{srcs, data});
 
-    // isl_map* id_to_all_x_y = isl_map_read_from_str(
-    //     ctx,
-    //     "{ [id] -> [id, x, y] }"
-    // );
-    // isl_map* id_to_all_dst_data = isl_map_apply_range(id_to_all_x_y, dst);
-    // isl_map* id_to_missing_data = isl_map_subtract(id_to_all_dst_data, src);
-
+    // Calculates the cost formulas of the first layer.
     std::string crease_costs = "{ [id, x, y] -> x: x >= 0; [id, x, y] -> -x: x < 0 }";
     std::string fold_formula = "{ [id, x, y] -> [id, y] }";
     std::string multicast_costs = "{ [id, y] -> y+1 }";
-    std::string collapse_formula = "{ [id] -> [id, x, y] }";
 
-    BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, collapse_formula, ctx);
+    // Calculates the collapse formulas of the first layer.
+    std::string dst_collapse_formula = "{ [id] -> [id, x, y] }";
+    std::string src_collapse_formula = "{ [id] -> [id] }";
+    collapse collapse_formulas = collapse(new collapse_struct{src_collapse_formula, dst_collapse_formula});
+
+    BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, collapse_formulas, ctx);
     std::cout << "Evaluating..." << std::endl;
     test.evaluate(test_case);
 
