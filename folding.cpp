@@ -97,7 +97,7 @@ class BranchTwig
          * 
          * @return A struct of the binding abstraction for the next layer.
          */
-        void evaluate(const std::string& s_srcs, const std::string& s_dsts)
+        binding evaluate(const std::string& s_srcs, const std::string& s_dsts)
         {
             // Folds the destinations onto their connected trunk.
             const fold_result fold_res = this->fold(s_dsts);
@@ -113,9 +113,8 @@ class BranchTwig
 
             // Calculates the requests that are not satisfied by the layer.
             ///@todo Collapse the folded destinations into the next layer.
-            const binding collapsed = this->collapse(s_srcs, s_dsts);
-            std::cout << "Collapsed: " << collapsed->srcs << std::endl;
-            std::cout << "Missing: " << collapsed->dsts << std::endl;
+            binding collapsed = this->collapse(s_srcs, s_dsts);
+            return collapsed;
         }
 
         /// @brief Wraps evaluate by accepting the binding as a struct.
@@ -236,6 +235,8 @@ class BranchTwig
 
             // Collapses all src requests.
             isl_map *p_collapsed_srcs = isl_map_apply_range(p_collapse_srcs, p_srcs);
+            // Converts p_collapsed_srcs to a string.
+            std::string s_collapsed_srcs = isl_map_to_str(p_collapsed_srcs);
             // Collapses all dst requests to the same format as their SRCs.
             isl_map *p_collapsed_dsts = isl_map_apply_range(p_collapse_dsts, p_dsts);
 
@@ -247,7 +248,7 @@ class BranchTwig
             isl_map_free(p_missing_data);
 
             // Initializes the collapsed binding abstraction for the next layer.
-            binding collapsed = binding(new binding_struct{s_srcs, s_missing_data});
+            binding collapsed = binding(new binding_struct{s_collapsed_srcs, s_missing_data});
             return collapsed;
         }
 };
@@ -279,7 +280,11 @@ int main(int argc, char* argv[])
 
     BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, collapse_formulas, ctx);
     std::cout << "Evaluating..." << std::endl;
-    test.evaluate(test_case);
+    binding collapsed = test.evaluate(test_case);
+    // Prints out the collapsed binding abstraction for the next layer.
+    std::cout << "Collapsed: " << collapsed->srcs << std::endl;
+    std::cout << "Missing: " << collapsed->dsts << std::endl;
+    std::cout << "Done." << std::endl;
 
     ///@note Frees ctx to check for memory leaks through ISL.
     isl_ctx_free(ctx);
