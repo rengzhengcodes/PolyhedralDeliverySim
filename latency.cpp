@@ -78,10 +78,10 @@ int main(int argc, char* argv[])
  *                                      the data requested.
  * @param __isl_take dist_func          The distance function to use, as a map.
  */ 
-isl_pw_qpolynomial_fold *minimize_jumps(
-    isl_map *p_src_occupancy, 
-    isl_map *p_dst_fill, 
-    isl_pw_aff *dist_func
+__isl_give isl_pw_qpolynomial_fold *minimize_jumps(
+    __isl_take isl_map *p_src_occupancy, 
+    __isl_take isl_map *p_dst_fill, 
+    __isl_take isl_pw_aff *dist_func
 ) {
     /* Inverts dst_fill such that data implies dst.
      * i.e. {[xd, yd] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
@@ -135,7 +135,7 @@ isl_pw_qpolynomial_fold *minimize_jumps(
         dst_to_data_TO_dst_to_src, dist_func_fold, &b
     );
 
-    // Makes sure bounds are tight
+    // Makes sure bounds are tight.
     assert(b == isl_bool_true);
 
     return manhattan_distance;
@@ -145,14 +145,17 @@ isl_pw_qpolynomial_fold *minimize_jumps(
  * Analyzes the total jumps that a process takes given the source, destination,
  * and distance function.
  * 
- * @param __isl_take p_src_occupancy    A map relating source location and the
- *                                     data occupied.
- * @param __isl_take p_dst_fill         A map relating destination location and
- *                                     the data requested.
- * @param __isl_take dist_func          The distance function to use, as a map.
+ * @param p_src_occupancy    A map relating source location and the
+ *                           data occupied.
+ * @param p_dst_fill         A map relating destination location and
+ *                           the data requested.
+ * @param dist_func          The distance function to use, as a map.
  */
-long analyze_jumps(isl_map *p_src_occ, isl_map *p_dst_fill, isl_pw_aff *p_dist_func)
-{
+long analyze_jumps(
+    __isl_take isl_map *p_src_occ, 
+    __isl_take isl_map *p_dst_fill,
+    __isl_take isl_pw_aff *p_dist_func
+) {
     // Prints out inputs for debugging.
     dump("src_occupancy: ", p_src_occ);
     dump("dst_fill: ", p_dst_fill);
