@@ -173,42 +173,14 @@ long analyze_jumps(isl_map *p_src_occ, isl_map *p_dst_fill, isl_pw_aff *p_dist_f
     // Fetches the minimum distance between every source and destination per data.
     isl_pw_qpolynomial_fold *p_min_dist = minimize_jumps(p_src_occ, p_dst_fill, p_dist_func);
 
-    // prints out intermediates
-    // std::cout << "min_dist: " << 
-    // isl_pw_qpolynomial_fold_list_to_str(isl_pw_qpolynomial_fold_to_list(p_min_dist))
-    //  << std::endl;
-
     // Goes over all the qpolynomial_folds, minimizes them, and adds them to the total.
     isl_val *p_total_jumps = isl_val_zero(isl_pw_qpolynomial_fold_get_ctx(p_min_dist));
-    std::cout << "past p_total_jumps" << std::endl;
 
-    // Iterates over all the qpolynomial folds.
-    // isl_pw_qpolynomial_fold_foreach_piece(p_min_dist, 
-    //     [](isl_set *p_set, isl_qpolynomial_fold *p_min_dist, void *p_user) -> isl_stat {
-    //         isl_val ** p_total = static_cast<isl_val **>(p_user);
-    //         // Minimizes the qpolynomial.
-    //         isl_val *p_min = isl_pw_qpolynomial_fold_max(
-    //             isl_pw_qpolynomial_fold_from_qpolynomial_fold(
-    //                 p_min_dist
-    //             )
-    //         );
-    //         // Adds the minimum to the total.
-    //         *p_total = isl_val_add(
-    //             *p_total,
-    //             p_min
-    //         );
-    //         std::cout << isl_val_to_str(*p_total) << std::endl;
-
-    //         return isl_stat_ok;
-    //     }, 
-    //     &p_total_jumps
-    // );
-
+    // Turns 
     isl_pw_qpolynomial *un_fold = gather_pw_qpolynomial_from_fold(p_min_dist);
-    std::cout << "unfold" << isl_pw_qpolynomial_to_str(un_fold) << std::endl;
 
+    // 
     isl_pw_qpolynomial *sum = isl_pw_qpolynomial_sum(isl_pw_qpolynomial_sum(un_fold));
-    std::cout << isl_pw_qpolynomial_to_str(sum) << std::endl;
 
     // Grabs the return value as a int.
     long ret = isl_val_get_num_si(p_total_jumps);
