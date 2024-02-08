@@ -16,31 +16,6 @@
 #include <barvinok/barvinok.h>
 #include <barvinok/polylib.h>
 
-/// @brief Strings representing the src and dst datum holds/requests in ISL.
-struct binding_struct
-{
-    const std::string srcs;
-    const std::string dsts;
-};
-typedef std::unique_ptr<binding_struct> binding;
-/** 
- * @brief Defines the struct that comprises the result of folding and the unique
- * ptr to it that represents what is returned by fold.
- */
-struct fold_struct
-{
-    const long cost;
-    const std::string folded_repr;
-};
-typedef std::unique_ptr<fold_struct> fold_result;
-/// @brief Defines the struct characterizing the collapsing behavior of a layer.
-struct collapse_struct
-{
-    const std::string src_collapser;
-    const std::string dst_collapser;
-};
-typedef std::shared_ptr<collapse_struct> collapse;
-
 class BranchTwig
 {
     public:
@@ -252,6 +227,26 @@ class BranchTwig
             return collapsed;
         }
 };
+
+class BranchTrunk
+{
+    public:
+        /// @brief The cost formula of the folding step for this layer.
+        const std::string crease_costs;
+        /** 
+         * @brief The folding action to a multicastable representation after
+         * calculating the cost of folding. 
+         */
+        const std::string fold_formula;
+        /// @brief The cost formula of the multicasting step for this layer.
+        const std::string multicast_costs;
+        /// @brief The src collapse formulation for the next layer.
+        const std::string src_collapser;
+        /// @brief The dst collapse formulation for the next layer.
+        const std::string dst_collapser;
+        /// @brief The context the layer is in.
+        isl_ctx *const ctx;
+}
 
 int main(int argc, char* argv[])
 {

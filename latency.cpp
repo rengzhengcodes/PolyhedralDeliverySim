@@ -1,5 +1,55 @@
 #include "latency.hpp"
 
+struct qpolynomial_from_fold_info
+{
+  isl_pw_qpolynomial** pp_pwqp;
+  isl_set* domain;
+};
+
+isl_stat fold_accumulator(isl_qpolynomial* qp, void* pwqp_out)
+{
+  auto p_info = static_cast<qpolynomial_from_fold_info*>(pwqp_out);
+  auto p_pwqp = isl_pw_qpolynomial_from_qpolynomial(qp);
+  p_pwqp = isl_pw_qpolynomial_intersect_domain(p_pwqp,
+                                               isl_set_copy(p_info->domain));
+  if (*p_info->pp_pwqp)
+  {
+    *p_info->pp_pwqp = isl_pw_qpolynomial_add(p_pwqp, *p_info->pp_pwqp);
+  }
+  else
+  {
+    *p_info->pp_pwqp = p_pwqp;
+  }
+  return isl_stat_ok;
+}
+
+isl_bool
+pw_fold_accumulator(isl_set* set, isl_qpolynomial_fold* fold, void* pwqp_out)
+{
+  qpolynomial_from_fold_info info {
+    .pp_pwqp = static_cast<isl_pw_qpolynomial**>(pwqp_out),
+    .domain = set
+  };
+  isl_qpolynomial_fold_foreach_qpolynomial(
+    fold,
+    fold_accumulator,
+    &info
+  );
+  return isl_bool_true;
+}
+
+__isl_give isl_pw_qpolynomial*
+gather_pw_qpolynomial_from_fold(__isl_take isl_pw_qpolynomial_fold* pwqpf)
+{
+  isl_pw_qpolynomial* p_pwqp = nullptr;
+  isl_pw_qpolynomial_fold_every_piece(
+    pwqpf,
+    pw_fold_accumulator,
+    &p_pwqp
+  );
+  return p_pwqp;
+}
+
 int main(int argc, char* argv[])
 {
     // Defines the src occupancy map as a string.
@@ -133,25 +183,32 @@ long analyze_jumps(isl_map *p_src_occ, isl_map *p_dst_fill, isl_pw_aff *p_dist_f
     std::cout << "past p_total_jumps" << std::endl;
 
     // Iterates over all the qpolynomial folds.
-    isl_pw_qpolynomial_fold_foreach_piece(p_min_dist, 
-        [](isl_set *p_set, isl_qpolynomial_fold *p_min_dist, void *p_user) -> isl_stat {
-            isl_val ** p_total = static_cast<isl_val **>(p_user);
-            // Minimizes the qpolynomial.
-            isl_val *p_min = isl_pw_qpolynomial_fold_max(
-                isl_pw_qpolynomial_fold_from_qpolynomial_fold(
-                    p_min_dist
-                )
-            );
-            // Adds the minimum to the total.
-            *p_total = isl_val_add(
-                *p_total,
-                p_min
-            );
+    // isl_pw_qpolynomial_fold_foreach_piece(p_min_dist, 
+    //     [](isl_set *p_set, isl_qpolynomial_fold *p_min_dist, void *p_user) -> isl_stat {
+    //         isl_val ** p_total = static_cast<isl_val **>(p_user);
+    //         // Minimizes the qpolynomial.
+    //         isl_val *p_min = isl_pw_qpolynomial_fold_max(
+    //             isl_pw_qpolynomial_fold_from_qpolynomial_fold(
+    //                 p_min_dist
+    //             )
+    //         );
+    //         // Adds the minimum to the total.
+    //         *p_total = isl_val_add(
+    //             *p_total,
+    //             p_min
+    //         );
+    //         std::cout << isl_val_to_str(*p_total) << std::endl;
 
-            return isl_stat_ok;
-        }, 
-        &p_total_jumps
-    );
+    //         return isl_stat_ok;
+    //     }, 
+    //     &p_total_jumps
+    // );
+
+    isl_pw_qpolynomial *un_fold = gather_pw_qpolynomial_from_fold(p_min_dist);
+    std::cout << "unfold" << isl_pw_qpolynomial_to_str(un_fold) << std::endl;
+
+    isl_pw_qpolynomial *sum = isl_pw_qpolynomial_sum(isl_pw_qpolynomial_sum(un_fold));
+    std::cout << isl_pw_qpolynomial_to_str(sum) << std::endl;
 
     // Grabs the return value as a int.
     long ret = isl_val_get_num_si(p_total_jumps);
