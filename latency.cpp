@@ -163,9 +163,10 @@ long analyze_jumps(isl_map *p_src_occ, isl_map *p_dst_fill, isl_pw_aff *p_dist_f
     isl_pw_qpolynomial *un_fold = gather_pw_qpolynomial_from_fold(p_min_dist);
     // First sums cost per dst, then sums cost per dst to get total cost.
     isl_pw_qpolynomial *sum = isl_pw_qpolynomial_sum(isl_pw_qpolynomial_sum(un_fold));
-    std::cout << isl_pw_qpolynomial_to_str(sum) << std::endl;
-    // Grabs the return value as a int.
-    long ret = 0;
+    // Grabs the return value as an isl_val.
+    isl_val *sum_extract = isl_pw_qpolynomial_eval(sum, isl_point_zero(isl_pw_qpolynomial_get_domain_space(sum)));
+    // Converts isl_val to int.
+    long ret = isl_val_get_num_si(sum_extract);
 
     return ret;
 }
@@ -189,10 +190,6 @@ long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill
         dist_func.c_str()
     );
 
-    // prints out inputs
-    dump("src_occupancy: ", p_src_occupancy);
-    dump("dst_fill: ", p_dst_fill);
-    dump("dist_func: ", p_dist_func);
     // Calls the isl version of analyze_latency.
     long ret = analyze_jumps(
         p_src_occupancy,
