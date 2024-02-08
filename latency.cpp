@@ -3,14 +3,15 @@
 int main(int argc, char* argv[])
 {
     // Defines the src occupancy map as a string.
-    std::string src_occupancy = "{[x, y] -> [a, b] : a=x, b=y, 0 <= x < 8, 0 <= y < 8, 0 <= a < 8, 0 <= b < 8}";
+    std::string src_occupancy = "{[xs, ys] -> [a, b] : a=xs and b=ys and 0 <= xs < 8 and 0 <= ys < 8}";
     // Defines the dst fill map as a string.
-    std::string dst_fill = "{[x, y] -> [a, b] : a=x, 0 <= x < 8, 0 <= y < 8, 0 <= a < 8, 0 <= b < 8}";
+    std::string dst_fill = "{[xd, yd] -> [a, b] : a=xd and 0 <= xd < 8 and 0 <= yd < 8 and 0 <= a < 8 and 0 <= b < 8}";
 
     // Defines the torus circumference.
     int torus_circumference = 8;
     // Defines the distance function string.
-    std::string dist_func_str = nd_manhattan_metric({"x", "y"}, {"x", "y"});
+    std::string dist_func_str = nd_manhattan_metric({"xs", "ys"}, {"xd", "yd"});
+    std::cout << dist_func_str << std::endl;
   
     // long latency = analyze_latency(src_occupancy, dst_fill, dist_func_str);
     // std::cout << "latency: " << latency << std::endl;
@@ -32,25 +33,34 @@ isl_pw_qpolynomial_fold *minimize_jumps(
     isl_map *p_dst_fill, 
     isl_pw_aff *dist_func
 ) {
+    std::cout << "p_dst_fill" << std::endl;
+    isl_map_dump(p_dst_fill);
     /* Inverts dst_fill such that data implies dst.
      * i.e. {[xd, yd] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
     isl_map *dst_fill_inverted = isl_map_reverse(
         isl_map_copy(p_dst_fill)
     );
+    std::cout << "dst_fill_inv" << std::endl;
+    isl_map_dump(dst_fill_inverted);
     /* Inverts src_occupancy such that data implies source.
      * i.e. {[xs, ys] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
     isl_map *src_occupancy_inverted = isl_map_reverse(p_src_occupancy);
-
+    std::cout << "src_occupancy_inverted" << std::endl;
+    isl_map_dump(src_occupancy_inverted);
     /* Takes the factored range of src_occupancy_inverted and dst_fill_inverted
      * to get {[d0, d1] -> [[xd, yd] -> [xs, ys]]} */
     isl_map *data_TO_dst_to_src = isl_map_range_product(
             dst_fill_inverted, src_occupancy_inverted
     );
+    std::cout << "data_TO_dst_to_src" << std::endl;
+    isl_map_dump(data_TO_dst_to_src);
     /* Wraps dst fill such that the binary relation implies data.
      * i.e. {[[xd, yd] -> [d0, d1]] -> [d0, d1]} */
     isl_map *dst_fill_wrapped = isl_map_range_map(
         isl_map_copy(p_dst_fill)
     );
+    std::cout << "dst_fill_wrapped" << std::endl;
+    isl_map_dump(dst_fill_wrapped);
 
     /* Composites dst_fill_wrapped and data_to_dst_to_src to get
      * {[[xd, yd] -> [d0, d1]] -> [[xd', yd'] -> [xs, ys]]} */
@@ -73,6 +83,7 @@ isl_pw_qpolynomial_fold *minimize_jumps(
 
     // Converts the distance function into a pw_qpolynomial.
     isl_pw_qpolynomial *dist_func_pw = isl_pw_qpolynomial_from_pw_aff(dist_func);
+    std::cout << "dist func pw:" << isl_pw_qpolynomial_to_str(dist_func_pw) << std::endl;
     // Converts the pw_qpolynomial into a pw_qpolynomial_fold.
     isl_pw_qpolynomial_fold *dist_func_fold = isl_pw_qpolynomial_fold_from_pw_qpolynomial(
         isl_fold_max, dist_func_pw
@@ -81,9 +92,13 @@ isl_pw_qpolynomial_fold *minimize_jumps(
     /* Computes the manhattan distance between the destination for a data and
      * a source for that data. */
     isl_bool b = isl_bool_true;
+    std::cout << "dst_to_data_TO-dst_to_src:" << isl_map_to_str(dst_to_data_TO_dst_to_src) << std::endl;
     isl_pw_qpolynomial_fold *manhattan_distance = isl_map_apply_pw_qpolynomial_fold(
         dst_to_data_TO_dst_to_src, dist_func_fold, &b
     );
+    assert(b == isl_bool_true);
+    // std::cout << "isl_pw_qpolynomial_fold:" << isl_pw_qpolynomial_fold_list_to_str(isl_pw_qpolynomial_fold_to_list(manhattan_distance))
+    // << std::endl;
 
     return manhattan_distance;
 }
@@ -109,16 +124,18 @@ long analyze_jumps(isl_map *p_src_occ, isl_map *p_dst_fill, isl_pw_aff *p_dist_f
     isl_pw_qpolynomial_fold *p_min_dist = minimize_jumps(p_src_occ, p_dst_fill, p_dist_func);
 
     // prints out intermediates
-    std::cout << "min_dist: " << 
-    isl_pw_qpolynomial_fold_list_to_str(isl_pw_qpolynomial_fold_to_list(p_min_dist))
-     << std::endl;
+    // std::cout << "min_dist: " << 
+    // isl_pw_qpolynomial_fold_list_to_str(isl_pw_qpolynomial_fold_to_list(p_min_dist))
+    //  << std::endl;
 
     // Goes over all the qpolynomial_folds, minimizes them, and adds them to the total.
     isl_val *p_total_jumps = isl_val_zero(isl_pw_qpolynomial_fold_get_ctx(p_min_dist));
+    std::cout << "past p_total_jumps" << std::endl;
 
     // Iterates over all the qpolynomial folds.
     isl_pw_qpolynomial_fold_foreach_piece(p_min_dist, 
         [](isl_set *p_set, isl_qpolynomial_fold *p_min_dist, void *p_user) -> isl_stat {
+            isl_val ** p_total = static_cast<isl_val **>(p_user);
             // Minimizes the qpolynomial.
             isl_val *p_min = isl_pw_qpolynomial_fold_max(
                 isl_pw_qpolynomial_fold_from_qpolynomial_fold(
@@ -126,19 +143,14 @@ long analyze_jumps(isl_map *p_src_occ, isl_map *p_dst_fill, isl_pw_aff *p_dist_f
                 )
             );
             // Adds the minimum to the total.
-            isl_val *p_total = isl_val_add(
-                isl_val_copy((isl_val *) p_user),
+            *p_total = isl_val_add(
+                *p_total,
                 p_min
             );
-            // Frees the isl objects.
-            isl_val_free(p_min);
-            isl_val_free((isl_val *) p_user);
-            // Sets the user to the total.
-            p_user = p_total;
 
             return isl_stat_ok;
         }, 
-        p_total_jumps
+        &p_total_jumps
     );
 
     // Grabs the return value as a int.
@@ -169,6 +181,10 @@ long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill
         dist_func.c_str()
     );
 
+    // prints out inputs
+    dump("src_occupancy: ", p_src_occupancy);
+    dump("dst_fill: ", p_dst_fill);
+    dump("dist_func: ", p_dist_func);
     // Calls the isl version of analyze_latency.
     long ret = analyze_jumps(
         p_src_occupancy,
