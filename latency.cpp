@@ -168,6 +168,9 @@ long analyze_jumps(isl_map *p_src_occ, isl_map *p_dst_fill, isl_pw_aff *p_dist_f
     // Converts isl_val to int.
     long ret = isl_val_get_num_si(sum_extract);
 
+    // Frees val.
+    isl_val_free(sum_extract);
+
     return ret;
 }
 
