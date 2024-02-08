@@ -3,17 +3,17 @@
 int main(int argc, char* argv[])
 {
     // Defines the src occupancy map as a string.
-    std::string src_occupancy = "{ [xs, ys] -> [d0, d1] : d0=xs and d1=ys and 0 <= xs < 100 and 0 <= ys < 100 }";
+    std::string src_occupancy = "{[x, y] -> [a, b] : a=x, b=y, 0 <= x < 8, 0 <= y < 8, 0 <= a < 8, 0 <= b < 8}";
     // Defines the dst fill map as a string.
-    std::string dst_fill = "{ [xd, yd] -> [d0, d1] : d0=xd and 0 <= d1 < 100 and 0 <= xd < 100 and 0 <= yd < 100 }";
+    std::string dst_fill = "{[x, y] -> [a, b] : a=x, 0 <= x < 8, 0 <= y < 8, 0 <= a < 8, 0 <= b < 8}";
 
     // Defines the torus circumference.
     int torus_circumference = 8;
     // Defines the distance function string.
-    std::string dist_func_str = nd_manhattan_metric({"xs", "ys"}, {"xd", "yd"});
+    std::string dist_func_str = nd_manhattan_metric({"x", "y"}, {"x", "y"});
   
-    long latency = analyze_latency(src_occupancy, dst_fill, dist_func_str);
-    std::cout << "latency: " << latency << std::endl;
+    // long latency = analyze_latency(src_occupancy, dst_fill, dist_func_str);
+    // std::cout << "latency: " << latency << std::endl;
     long jumps = analyze_jumps(src_occupancy, dst_fill, dist_func_str);
     std::cout << "jumps:\t " << jumps << std::endl;
 }
