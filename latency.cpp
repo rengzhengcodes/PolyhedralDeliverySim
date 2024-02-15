@@ -52,21 +52,32 @@ gather_pw_qpolynomial_from_fold(__isl_take isl_pw_qpolynomial_fold* pwqpf)
 
 int main(int argc, char* argv[])
 {
-    // Defines the src occupancy map as a string.
-    std::string src_occupancy = "{[xs, ys] -> [a, b] : a=xs and b=ys and 0 <= xs < 8 and 0 <= ys < 8}";
-    // Defines the dst fill map as a string.
-    std::string dst_fill = "{[xd, yd] -> [a, b] : a=xd and 0 <= xd < 8 and 0 <= yd < 8 and 0 <= a < 8 and 0 <= b < 8}";
+    int M_int = 64;
+    int N_int = 64;
+    std::string M = std::to_string(M_int);
+    std::string N = std::to_string(N_int);
+    std::vector<int> D_vals({1, 2, 4, 8, 16, 32, 64});
+    for (int D_int : D_vals) {
+        std::string D = std::to_string(D_int);
+        // Defines the src occupancy map as a string.
+        std::string src_occupancy = "{[xs, ys] -> [a, b] : ("+D+"*xs)%"+M+" <= a < ("+
+                                    D+"*xs+"+D+")%"+M+", b=ys, 0 <= xs < "+M+
+                                    ", 0 <= ys < "+N+", 0 <= a < "+M+", 0 <= b < "+N+" }";
+        // Defines the dst fill map as a string.
+        std::string dst_fill =  "{[xd, yd] -> [a, b] : b=yd, 0 <= xd < "+M+
+                                ", 0 <= yd < "+N+", 0 <= a < "+M+", 0 <= b < "+N+" }";
 
-    // Defines the torus circumference.
-    int torus_circumference = 8;
-    // Defines the distance function string.
-    std::string dist_func_str = nd_manhattan_metric({"xs", "ys"}, {"xd", "yd"});
-    std::cout << dist_func_str << std::endl;
-  
-    // long latency = analyze_latency(src_occupancy, dst_fill, dist_func_str);
-    // std::cout << "latency: " << latency << std::endl;
-    long jumps = analyze_jumps(src_occupancy, dst_fill, dist_func_str);
-    std::cout << "jumps:\t " << jumps << std::endl;
+        // Defines the distance function string.
+        std::string dist_func_str = nd_manhattan_metric({"xs", "ys"}, {"xd", "yd"});
+        if (islIntermediates) {
+            std::cout << dist_func_str << std::endl;
+        }
+    
+        // long latency = analyze_latency(src_occupancy, dst_fill, dist_func_str);
+        // std::cout << "latency: " << latency << std::endl;
+        long jumps = analyze_jumps(src_occupancy, dst_fill, dist_func_str);
+        std::cout << "D: " << D << " | jumps:\t " << jumps << std::endl;
+    }
 }
 
 /**
