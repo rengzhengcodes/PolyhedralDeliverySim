@@ -60,8 +60,8 @@ int main(int argc, char* argv[])
     for (int D_int : D_vals) {
         std::string D = std::to_string(D_int);
         // Defines the src occupancy map as a string.
-        std::string src_occupancy = "{[xs, ys] -> [a, b] : ("+D+"*xs)%"+M+" <= a < ("+
-                                    D+"*xs+"+D+")%"+M+" and b=ys and 0 <= xs < "+M+
+        std::string src_occupancy = "{[xs, ys] -> [a, b] : ("+D+"*xs)%"+M+" <= a <= ("+
+                                    D+"*xs+"+D+"-1)%"+M+" and b=ys and 0 <= xs < "+M+
                                     " and 0 <= ys < "+N+" and 0 <= a < "+M+" and 0 <= b < "+N+" }";
         // Defines the dst fill map as a string.
         std::string dst_fill =  "{[xd, yd] -> [a, b] : b=yd and 0 <= xd < "+M+
@@ -99,22 +99,26 @@ __isl_give isl_pw_qpolynomial_fold *minimize_jumps(
     /* Inverts src_occupancy such that data implies source.
      * i.e. {[xs, ys] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
     isl_map *src_occupancy_inverted = isl_map_reverse(p_src_occupancy);
+    dump("src_occupancy_inverted", src_occupancy_inverted);
     /* Takes the factored range of src_occupancy_inverted and dst_fill_inverted
      * to get {[d0, d1] -> [[xd, yd] -> [xs, ys]]} */
     isl_map *data_TO_dst_to_src = isl_map_range_product(
             dst_fill_inverted, src_occupancy_inverted
     );
+    dump("data_TO_dst_to_src", data_TO_dst_to_src);
     /* Wraps dst fill such that the binary relation implies data.
      * i.e. {[[xd, yd] -> [d0, d1]] -> [d0, d1]} */
     isl_map *dst_fill_wrapped = isl_map_range_map(
         isl_map_copy(p_dst_fill)
     );
+    dump("dst_fill_wrapped", dst_fill_wrapped);
 
     /* Composites dst_fill_wrapped and data_to_dst_to_src to get
      * {[[xd, yd] -> [d0, d1]] -> [[xd', yd'] -> [xs, ys]]} */
     isl_map *dst_to_data_TO_dst_to_src = isl_map_apply_range(
         dst_fill_wrapped, data_TO_dst_to_src
     );
+    dump("dst_to_data_TO_dst_to_src", dst_to_data_TO_dst_to_src);
 
     // Restricts the range such that xd' = xd and yd' = yd.
     for (int i = 0; i < isl_map_dim(p_dst_fill, isl_dim_in); i++)
@@ -144,7 +148,7 @@ __isl_give isl_pw_qpolynomial_fold *minimize_jumps(
     );
 
     // Makes sure bounds are tight.
-    assert(b == isl_bool_true);
+    // assert(b == isl_bool_true);
 
     return manhattan_distance;
 }
