@@ -52,11 +52,11 @@ gather_pw_qpolynomial_from_fold(__isl_take isl_pw_qpolynomial_fold* pwqpf)
 
 int main(int argc, char* argv[])
 {
-    int M_int = 64;
-    int N_int = 64;
+    int M_int = 4;
+    int N_int = 4;
     std::string M = std::to_string(M_int);
     std::string N = std::to_string(N_int);
-    std::vector<int> D_vals({1, 2, 4, 8, 16, 32, 64});
+    std::vector<int> D_vals({1, 2, 4});
     for (int D_int : D_vals) {
         std::string D = std::to_string(D_int);
         // Defines the src occupancy map as a string.
@@ -91,55 +91,79 @@ __isl_give isl_pw_qpolynomial_fold *minimize_jumps(
     __isl_take isl_map *p_dst_fill, 
     __isl_take isl_pw_aff *dist_func
 ) {
-    /* Inverts dst_fill such that data implies dst.
-     * i.e. {[xd, yd] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
-    isl_map *dst_fill_inverted = isl_map_reverse(
-        isl_map_copy(p_dst_fill)
+    isl_set* p_wrapped_dst_fill = isl_map_wrap(p_dst_fill);
+    isl_map* p_wrapped_fill_identity =
+        isl_map_identity(isl_space_map_from_set(isl_set_get_space(
+            p_wrapped_dst_fill
+        )));
+    dump("p_wrapped_fill_identity", p_wrapped_fill_identity);
+    p_wrapped_fill_identity = isl_map_intersect_domain(
+        p_wrapped_fill_identity,
+        p_wrapped_dst_fill
     );
+    dump("p_wrapped_fill_identity", p_wrapped_fill_identity);
+    isl_map* p_uncurried_fill_identity =
+        isl_map_uncurry(p_wrapped_fill_identity);
+    dump("p_uncurried_fill_identity", p_uncurried_fill_identity);
+
     /* Inverts src_occupancy such that data implies source.
      * i.e. {[xs, ys] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
     isl_map *src_occupancy_inverted = isl_map_reverse(p_src_occupancy);
-    dump("src_occupancy_inverted", src_occupancy_inverted);
-    /* Takes the factored range of src_occupancy_inverted and dst_fill_inverted
-     * to get {[d0, d1] -> [[xd, yd] -> [xs, ys]]} */
-    isl_map *data_TO_dst_to_src = isl_map_range_product(
-            dst_fill_inverted, src_occupancy_inverted
-    );
-    dump("data_TO_dst_to_src", data_TO_dst_to_src);
-    /* Wraps dst fill such that the binary relation implies data.
-     * i.e. {[[xd, yd] -> [d0, d1]] -> [d0, d1]} */
-    isl_map *dst_fill_wrapped = isl_map_range_map(
-        isl_map_copy(p_dst_fill)
-    );
-    dump("dst_fill_wrapped", dst_fill_wrapped);
 
-    /* Composites dst_fill_wrapped and data_to_dst_to_src to get
-     * {[[xd, yd] -> [d0, d1]] -> [[xd', yd'] -> [xs, ys]]} */
-    isl_map *dst_to_data_TO_dst_to_src = isl_map_apply_range(
-        dst_fill_wrapped, data_TO_dst_to_src
+    isl_map* p_dst_to_data_to_dst_TO_src = isl_map_apply_range(
+        p_uncurried_fill_identity,
+        src_occupancy_inverted
     );
-    dump("dst_to_data_TO_dst_to_src", dst_to_data_TO_dst_to_src);
+    dump("p_dst_to_data_to_dst_TO_src", p_dst_to_data_to_dst_TO_src);
 
-    // Restricts the range such that xd' = xd and yd' = yd.
-    for (int i = 0; i < isl_map_dim(p_dst_fill, isl_dim_in); i++)
-    {
-        /* Restricts the ith element of the output by equating it to the ith
-         * element of the input. Treats input and output as if it were flat. */
-        dst_to_data_TO_dst_to_src = isl_map_equate(
-            dst_to_data_TO_dst_to_src,
-            isl_dim_in, i,
-            isl_dim_out, i
-        );
-    };
-    isl_map_free(p_dst_fill);
+    isl_map* dst_to_data_TO_dst_to_src =
+        isl_map_curry(p_dst_to_data_to_dst_TO_src);
+    // /* Inverts dst_fill such that data implies dst.
+    //  * i.e. {[xd, yd] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
+    // isl_map *dst_fill_inverted = isl_map_reverse(
+    //     isl_map_copy(p_dst_fill)
+    // );
+
+    // dump("src_occupancy_inverted", src_occupancy_inverted);
+    // /* Takes the factored range of src_occupancy_inverted and dst_fill_inverted
+    //  * to get {[d0, d1] -> [[xd, yd] -> [xs, ys]]} */
+    // isl_map *data_TO_dst_to_src = isl_map_range_product(
+    //         dst_fill_inverted, src_occupancy_inverted
+    // );
+    // dump("data_TO_dst_to_src", data_TO_dst_to_src);
+    // /* Wraps dst fill such that the binary relation implies data.
+    //  * i.e. {[[xd, yd] -> [d0, d1]] -> [d0, d1]} */
+    // isl_map *dst_fill_wrapped = isl_map_range_map(
+    //     isl_map_copy(p_dst_fill)
+    // );
+    // dump("dst_fill_wrapped", dst_fill_wrapped);
+
+    // /* Composites dst_fill_wrapped and data_to_dst_to_src to get
+    //  * {[[xd, yd] -> [d0, d1]] -> [[xd', yd'] -> [xs, ys]]} */
+    // isl_map *dst_to_data_TO_dst_to_src = isl_map_apply_range(
+    //     dst_fill_wrapped, data_TO_dst_to_src
+    // );
+    // dump("dst_to_data_TO_dst_to_src", dst_to_data_TO_dst_to_src);
+
+    // // Restricts the range such that xd' = xd and yd' = yd.
+    // for (int i = 0; i < isl_map_dim(p_dst_fill, isl_dim_in); i++)
+    // {
+    //     /* Restricts the ith element of the output by equating it to the ith
+    //      * element of the input. Treats input and output as if it were flat. */
+    //     dst_to_data_TO_dst_to_src = isl_map_equate(
+    //         dst_to_data_TO_dst_to_src,
+    //         isl_dim_in, i,
+    //         isl_dim_out, i
+    //     );
+    // };
+    // isl_map_free(p_dst_fill);
 
     // Converts the distance function into a pw_qpolynomial.
     isl_pw_qpolynomial *dist_func_pw = isl_pw_qpolynomial_from_pw_aff(dist_func);
     // Converts the pw_qpolynomial into a pw_qpolynomial_fold.
     isl_pw_qpolynomial_fold *dist_func_fold = isl_pw_qpolynomial_fold_from_pw_qpolynomial(
-        isl_fold_max, dist_func_pw
+        isl_fold_min, dist_func_pw
     );
-    
     /* Computes the manhattan distance between the destination for a data and
      * a source for that data. */
     isl_bool b = isl_bool_true;
@@ -148,7 +172,7 @@ __isl_give isl_pw_qpolynomial_fold *minimize_jumps(
     );
 
     // Makes sure bounds are tight.
-    // assert(b == isl_bool_true);
+    assert(b == isl_bool_true);
 
     return manhattan_distance;
 }
