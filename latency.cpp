@@ -61,17 +61,14 @@ int main(int argc, char* argv[])
         std::string D = std::to_string(D_int);
         // Defines the src occupancy map as a string.
         std::string src_occupancy = "{[xs, ys] -> [a, b] : ("+D+"*xs)%"+M+" <= a < ("+
-                                    D+"*xs+"+D+")%"+M+", b=ys, 0 <= xs < "+M+
-                                    ", 0 <= ys < "+N+", 0 <= a < "+M+", 0 <= b < "+N+" }";
+                                    D+"*xs+"+D+")%"+M+" and b=ys and 0 <= xs < "+M+
+                                    " and 0 <= ys < "+N+" and 0 <= a < "+M+" and 0 <= b < "+N+" }";
         // Defines the dst fill map as a string.
-        std::string dst_fill =  "{[xd, yd] -> [a, b] : b=yd, 0 <= xd < "+M+
-                                ", 0 <= yd < "+N+", 0 <= a < "+M+", 0 <= b < "+N+" }";
+        std::string dst_fill =  "{[xd, yd] -> [a, b] : b=yd and 0 <= xd < "+M+
+                                " and 0 <= yd < "+N+" and 0 <= a < "+M+" and 0 <= b < "+N+" }";
 
         // Defines the distance function string.
         std::string dist_func_str = nd_manhattan_metric({"xs", "ys"}, {"xd", "yd"});
-        if (islIntermediates) {
-            std::cout << dist_func_str << std::endl;
-        }
     
         // long latency = analyze_latency(src_occupancy, dst_fill, dist_func_str);
         // std::cout << "latency: " << latency << std::endl;
