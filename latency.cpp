@@ -86,95 +86,56 @@ int main(int argc, char* argv[])
  *                                      the data requested.
  * @param __isl_take dist_func          The distance function to use, as a map.
  */ 
-__isl_give isl_pw_qpolynomial_fold *minimize_jumps(
-    __isl_take isl_map *p_src_occupancy, 
-    __isl_take isl_map *p_dst_fill, 
-    __isl_take isl_pw_aff *dist_func
+__isl_give isl_pw_qpolynomial *minimize_jumps(
+    __isl_take isl_map *src_occupancy, 
+    __isl_take isl_map *dst_fill, 
+    __isl_take isl_map *dist_func
 ) {
-    isl_set* p_wrapped_dst_fill = isl_map_wrap(p_dst_fill);
-    isl_map* p_wrapped_fill_identity =
+    /* Makes [[dst -> data] -> dst] -> [data] */
+    isl_set* wrapped_dst_fill = isl_map_wrap(dst_fill);
+    isl_map* wrapped_fill_identity =
         isl_map_identity(isl_space_map_from_set(isl_set_get_space(
-            p_wrapped_dst_fill
+            wrapped_dst_fill
         )));
-    dump("p_wrapped_fill_identity", p_wrapped_fill_identity);
-    p_wrapped_fill_identity = isl_map_intersect_domain(
-        p_wrapped_fill_identity,
-        p_wrapped_dst_fill
+    dump("wrapped_fill_identity", wrapped_fill_identity);
+    wrapped_fill_identity = isl_map_intersect_domain(
+        wrapped_fill_identity,
+        wrapped_dst_fill
     );
-    dump("p_wrapped_fill_identity", p_wrapped_fill_identity);
-    isl_map* p_uncurried_fill_identity =
-        isl_map_uncurry(p_wrapped_fill_identity);
-    dump("p_uncurried_fill_identity", p_uncurried_fill_identity);
+    dump("wrapped_fill_identity", wrapped_fill_identity);
+    /* Makes [dst -> data] -> [dst -> data] */
+    isl_map* uncurried_fill_identity = isl_map_uncurry(wrapped_fill_identity);
+    dump("uncurried_fill_identity", uncurried_fill_identity);
 
     /* Inverts src_occupancy such that data implies source.
      * i.e. {[xs, ys] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
-    isl_map *src_occupancy_inverted = isl_map_reverse(p_src_occupancy);
+    isl_map *src_occupancy_inverted = isl_map_reverse(src_occupancy);
 
-    isl_map* p_dst_to_data_to_dst_TO_src = isl_map_apply_range(
-        p_uncurried_fill_identity,
+    isl_map* dst_to_data_to_dst_TO_src = isl_map_apply_range(
+        uncurried_fill_identity,
         src_occupancy_inverted
     );
-    dump("p_dst_to_data_to_dst_TO_src", p_dst_to_data_to_dst_TO_src);
+    dump("dst_to_data_to_dst_TO_src", dst_to_data_to_dst_TO_src);
 
     isl_map* dst_to_data_TO_dst_to_src =
-        isl_map_curry(p_dst_to_data_to_dst_TO_src);
-    // /* Inverts dst_fill such that data implies dst.
-    //  * i.e. {[xd, yd] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
-    // isl_map *dst_fill_inverted = isl_map_reverse(
-    //     isl_map_copy(p_dst_fill)
-    // );
+        isl_map_curry(dst_to_data_to_dst_TO_src);
 
-    // dump("src_occupancy_inverted", src_occupancy_inverted);
-    // /* Takes the factored range of src_occupancy_inverted and dst_fill_inverted
-    //  * to get {[d0, d1] -> [[xd, yd] -> [xs, ys]]} */
-    // isl_map *data_TO_dst_to_src = isl_map_range_product(
-    //         dst_fill_inverted, src_occupancy_inverted
-    // );
-    // dump("data_TO_dst_to_src", data_TO_dst_to_src);
-    // /* Wraps dst fill such that the binary relation implies data.
-    //  * i.e. {[[xd, yd] -> [d0, d1]] -> [d0, d1]} */
-    // isl_map *dst_fill_wrapped = isl_map_range_map(
-    //     isl_map_copy(p_dst_fill)
-    // );
-    // dump("dst_fill_wrapped", dst_fill_wrapped);
-
-    // /* Composites dst_fill_wrapped and data_to_dst_to_src to get
-    //  * {[[xd, yd] -> [d0, d1]] -> [[xd', yd'] -> [xs, ys]]} */
-    // isl_map *dst_to_data_TO_dst_to_src = isl_map_apply_range(
-    //     dst_fill_wrapped, data_TO_dst_to_src
-    // );
-    // dump("dst_to_data_TO_dst_to_src", dst_to_data_TO_dst_to_src);
-
-    // // Restricts the range such that xd' = xd and yd' = yd.
-    // for (int i = 0; i < isl_map_dim(p_dst_fill, isl_dim_in); i++)
-    // {
-    //     /* Restricts the ith element of the output by equating it to the ith
-    //      * element of the input. Treats input and output as if it were flat. */
-    //     dst_to_data_TO_dst_to_src = isl_map_equate(
-    //         dst_to_data_TO_dst_to_src,
-    //         isl_dim_in, i,
-    //         isl_dim_out, i
-    //     );
-    // };
-    // isl_map_free(p_dst_fill);
-
-    // Converts the distance function into a pw_qpolynomial.
-    isl_pw_qpolynomial *dist_func_pw = isl_pw_qpolynomial_from_pw_aff(dist_func);
-    // Converts the pw_qpolynomial into a pw_qpolynomial_fold.
-    isl_pw_qpolynomial_fold *dist_func_fold = isl_pw_qpolynomial_fold_from_pw_qpolynomial(
-        isl_fold_min, dist_func_pw
+    // Calculates the distance of all the dst-src pairs with matching data.
+    isl_map *distances_map = isl_map_apply_range(
+        dst_to_data_TO_dst_to_src, dist_func
     );
-    /* Computes the manhattan distance between the destination for a data and
-     * a source for that data. */
-    isl_bool b = isl_bool_true;
-    isl_pw_qpolynomial_fold *manhattan_distance = isl_map_apply_pw_qpolynomial_fold(
-        dst_to_data_TO_dst_to_src, dist_func_fold, &b
-    );
+    dump("distances_map", distances_map);
 
-    // Makes sure bounds are tight.
-    assert(b == isl_bool_true);
+    // Converts the distances map to a piecewise affine.
+    isl_pw_multi_aff *dirty_distances_aff = isl_pw_multi_aff_from_map(distances_map);
+    assert(isl_pw_multi_aff_n_piece(dirty_distances_aff) == 1);
+    isl_pw_aff *distances_aff = isl_pw_multi_aff_get_at(dirty_distances_aff, 1);
+    isl_pw_multi_aff_free(dirty_distances_aff);
 
-    return manhattan_distance;
+    // Converts to a pw_qpolynomial for easier processing later.
+    isl_pw_qpolynomial *distances_pwqp = isl_pw_qpolynomial_from_pw_aff(distances_aff);
+
+    return distances_pwqp;
 }
 
 /**
@@ -188,20 +149,18 @@ __isl_give isl_pw_qpolynomial_fold *minimize_jumps(
  * @param dist_func          The distance function to use, as a map.
  */
 long analyze_jumps(
-    __isl_take isl_map *p_src_occ, 
-    __isl_take isl_map *p_dst_fill,
-    __isl_take isl_pw_aff *p_dist_func
+    __isl_take isl_map *src_occ, 
+    __isl_take isl_map *dst_fill,
+    __isl_take isl_map *dist_func
 ) {
     // Prints out inputs for debugging.
-    dump("src_occupancy: ", p_src_occ);
-    dump("dst_fill: ", p_dst_fill);
-    dump("dist_func: ", p_dist_func);
+    dump("src_occupancy: ", src_occ);
+    dump("dst_fill: ", dst_fill);
+    dump("dist_func: ", dist_func);
     // Fetches the minimum distance between every source and destination per data.
-    isl_pw_qpolynomial_fold *p_min_dist = minimize_jumps(p_src_occ, p_dst_fill, p_dist_func);
-    // Unconverts minimized jumps from the qpolynomial_fold to qpolynomial for barvinok.
-    isl_pw_qpolynomial *un_fold = gather_pw_qpolynomial_from_fold(p_min_dist);
+    isl_pw_qpolynomial *min_dist = minimize_jumps(src_occ, dst_fill, dist_func);
     // First sums cost per dst, then sums cost per dst to get total cost.
-    isl_pw_qpolynomial *sum = isl_pw_qpolynomial_sum(isl_pw_qpolynomial_sum(un_fold));
+    isl_pw_qpolynomial *sum = isl_pw_qpolynomial_sum(isl_pw_qpolynomial_sum(min_dist));
     // Grabs the return value as an isl_val.
     isl_val *sum_extract = isl_pw_qpolynomial_eval(sum, isl_point_zero(isl_pw_qpolynomial_get_domain_space(sum)));
     // Converts isl_val to int.
@@ -227,7 +186,7 @@ long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill
         p_ctx,
         dst_fill.c_str()
     );
-    isl_pw_aff *p_dist_func = isl_pw_aff_read_from_str(
+    isl_map *p_dist_func = isl_map_read_from_str(
         p_ctx,
         dist_func.c_str()
     );
@@ -258,14 +217,14 @@ long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill
  * @param __isl_take dist_func          The distance function to use, as a map.
  */
 long analyze_latency (
-    isl_map *p_src_occ, 
-    isl_map *p_dst_fill, 
-    isl_pw_aff *p_dist_func
+    isl_map *src_occ, 
+    isl_map *dst_fill, 
+    isl_map *dist_func
 ) {
     // Fetches the minimum distance between every source and destination per data.
-    isl_pw_qpolynomial_fold *p_min_dist = minimize_jumps(p_src_occ, p_dst_fill, p_dist_func);
+    isl_pw_qpolynomial *p_min_dist = minimize_jumps(src_occ, dst_fill, dist_func);
     // Computes the maximum of minimum distances for every data.
-    isl_val *p_max_min_dist = isl_pw_qpolynomial_fold_max(p_min_dist);
+    isl_val *p_max_min_dist = isl_pw_qpolynomial_max(p_min_dist);
     int ret = isl_val_get_num_si(p_max_min_dist);
 
     // Frees the isl objects.
@@ -296,7 +255,7 @@ long analyze_latency (
     // Reads the string representations of the maps into isl objects.
     isl_map *p_src_occ = isl_map_read_from_str(ctx, src_occupancy.c_str());
     isl_map *p_dst_fill = isl_map_read_from_str(ctx, dst_fill.c_str());
-    isl_pw_aff *p_dist_aff = isl_pw_aff_read_from_str(ctx, dist_func.c_str());
+    isl_map *p_dist_aff = isl_map_read_from_str(ctx, dist_func.c_str());
     // Calls the isl version of analyze_latency.
     long ret = analyze_latency(p_src_occ, p_dst_fill, p_dist_aff);
 
