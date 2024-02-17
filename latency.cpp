@@ -127,11 +127,11 @@ __isl_give isl_pw_qpolynomial *minimize_jumps(
     dump("distances_map", distances_map);
 
     // Converts the distances map to a piecewise affine.
-    isl_pw_multi_aff *dirty_distances_aff = isl_pw_multi_aff_from_map(distances_map);
-    std::cout << "dirty_distances_aff" <<  isl_pw_multi_aff_to_str(dirty_distances_aff) << std::endl;
-    assert(isl_pw_multi_aff_n_piece(dirty_distances_aff) == 1);
-    isl_pw_aff *distances_aff = isl_pw_multi_aff_get_at(dirty_distances_aff, 1);
-    isl_pw_multi_aff_free(dirty_distances_aff);
+    isl_multi_pw_aff *dirty_distances_aff =isl_multi_pw_aff_from_pw_multi_aff(isl_pw_multi_aff_from_map(distances_map));
+    std::cout << "dirty_distances_aff" <<  isl_multi_pw_aff_to_str(dirty_distances_aff) << std::endl;
+    assert(isl_multi_pw_aff_size(dirty_distances_aff) == 1);
+    isl_pw_aff *distances_aff = isl_multi_pw_aff_get_at(dirty_distances_aff, 0);
+    isl_multi_pw_aff_free(dirty_distances_aff);
 
     // Converts to a pw_qpolynomial for easier processing later.
     isl_pw_qpolynomial *distances_pwqp = isl_pw_qpolynomial_from_pw_aff(distances_aff);
