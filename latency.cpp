@@ -1,4 +1,5 @@
 #include "latency.hpp"
+#include <time.h>
 
 struct qpolynomial_from_fold_info
 {
@@ -56,8 +57,11 @@ int main(int argc, char* argv[])
     int N_int = 1024;
     std::string M = std::to_string(M_int);
     std::string N = std::to_string(N_int);
-    std::vector<int> D_vals({1, 2, 4, 256, 512, 1024});
+    std::vector<int> D_vals({1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
+    clock_t start, end;
+    double cpu_time_used;
     for (int D_int : D_vals) {
+        start = clock();
         std::string D = std::to_string(D_int);
         // Defines the src occupancy map as a string.
         std::string src_occupancy = "{[xs, ys] -> [a, b] : ("+D+"*xs)%"+M+" <= a <= ("+
@@ -73,7 +77,9 @@ int main(int argc, char* argv[])
         // long latency = analyze_latency(src_occupancy, dst_fill, dist_func_str);
         // std::cout << "latency: " << latency << std::endl;
         long jumps = analyze_jumps(src_occupancy, dst_fill, dist_func_str);
-        std::cout << "D: " << D << " | jumps:\t " << jumps << std::endl;
+        end = clock();
+        cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+        std::cout << "D: " << D << "\t| jumps: " << jumps << "\t| time: " << cpu_time_used << std::endl;
     }
 }
 
@@ -129,7 +135,7 @@ __isl_give isl_pw_qpolynomial *minimize_jumps(
     // Converts the distances map to a piecewise affine.
     isl_map *lexmin_distances = isl_map_lexmin(distances_map);
     isl_multi_pw_aff *dirty_distances_aff =isl_multi_pw_aff_from_pw_multi_aff(isl_pw_multi_aff_from_map(lexmin_distances));
-    std::cout << "dirty_distances_aff" <<  isl_multi_pw_aff_to_str(dirty_distances_aff) << std::endl;
+    // std::cout << "dirty_distances_aff" <<  isl_multi_pw_aff_to_str(dirty_distances_aff) << std::endl;
     assert(isl_multi_pw_aff_size(dirty_distances_aff) == 1);
     isl_pw_aff *distances_aff = isl_multi_pw_aff_get_at(dirty_distances_aff, 0);
     isl_multi_pw_aff_free(dirty_distances_aff);
