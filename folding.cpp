@@ -4,6 +4,7 @@
  * formulation for the next layer.
  */
 #include "folding.h"
+#include "latency.hpp"
 #include <memory>
 #include <string>
 
@@ -77,7 +78,7 @@ class BranchTwig
             // Folds the destinations onto their connected trunk.
             const fold_result fold_res = this->fold(s_dsts);
             std::cout << "Crease Cost: " << fold_res->cost << std::endl;
-            std::cout << "Folded: " << fold_res->folded_repr << std::endl;
+            // std::cout << "Folded: " << fold_res->folded_repr << std::endl;
 
             // Calculates the cost to every folded node per datum.
             const long casting_cost = this->multicast(fold_res->folded_repr);
@@ -134,13 +135,13 @@ class BranchTwig
             // Folds the dsts onto the trunk.
             isl_map *p_folded = isl_map_apply_range(p_data_to_dsts, p_fold);
             p_folded = isl_map_reverse(p_folded);
-            std::cout << "P_Folded: " << isl_map_to_str(p_folded) << std::endl;
+            // std::cout << "P_Folded: " << isl_map_to_str(p_folded) << std::endl;
             // Gets the largest y value per datum.
             /// @todo Functionalize this.
             std::string all_after = "{ [id, y] -> [id, y'] : y' > y }";
             isl_map *p_all_after = isl_map_read_from_str(ctx, all_after.c_str());
             isl_map *p_max_y = isl_map_apply_range(p_all_after, isl_map_copy(p_folded));
-            std::cout << "Max Y: " << isl_map_to_str(p_max_y) << std::endl;
+            // std::cout << "Max Y: " << isl_map_to_str(p_max_y) << std::endl;
             isl_map *p_folded_condensed = isl_map_subtract(p_folded, p_max_y);
             p_folded_condensed = isl_map_reverse(p_folded_condensed);
             // Converts p_folded_condensed to a string.
@@ -164,7 +165,7 @@ class BranchTwig
         {
             // Reads the folded destinations into isl format.
             isl_map *p_folded_bindings = isl_map_read_from_str(ctx, s_folded_bindings.c_str());
-            std::cout << s_folded_bindings << std::endl;
+            // std::cout << s_folded_bindings << std::endl;
             // Reads the multicast cost formulation into isl format.
             isl_pw_qpolynomial *p_cast_cost = isl_pw_qpolynomial_read_from_str(ctx, this->multicast_costs.c_str());
 
@@ -246,7 +247,7 @@ class BranchTrunk
         const std::string dst_collapser;
         /// @brief The context the layer is in.
         isl_ctx *const ctx;
-}
+};
 
 int main(int argc, char* argv[])
 {
@@ -254,33 +255,50 @@ int main(int argc, char* argv[])
     isl_ctx *ctx = isl_ctx_alloc();
 
     // Creates the binding abstraction for the first layer.
-    std::string srcs = R"SRC(
-        {[id] -> [data] : id = 0 and data = id}
-    )SRC";
-    std::string data = R"DST(
-        {[id, x, y] -> [data]: id = 0 and (-1 = x or x = 1) and 0 <= y <= 1 and data = y}
-    )DST";
-    binding test_case = binding(new binding_struct{srcs, data});
+    int M_int = 1024;
+    int N_int = 1024;
+    std::string M = std::to_string(M_int);
+    std::string N = std::to_string(N_int);
+    std::vector<int> D_vals({1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
+    clock_t start, end;
+    double cpu_time_used;
+    for (int D_int : D_vals) {
+        start = clock();
+        std::string D = std::to_string(D_int);
+        std::string srcs = R"SRC(
+            {[id] -> [a, b] : id = 0}
+        )SRC";
+        // Defines the src occupancy map as a string.
+        std::string dsts =  "{[id, x, y] -> [a, b] : ("+D+"*x)%"+M+" <= a <= ("+
+                            D+"*x+"+D+"-1)%"+M+" and b=y and 0 <= x < "+M+
+                            " and 0 <= y < "+N+" and 0 <= a < "+M+" and 0 <= b < "
+                            +N+" and id = 0 }";
+        binding test_case = binding(new binding_struct{srcs, dsts});
 
-    // Calculates the cost formulas of the first layer.
-    /// @note Read right to left like function composition.
-    std::string crease_costs = "{ [id, x, y] -> x: x >= 0; [id, x, y] -> -x: x < 0 }";
-    std::string fold_formula = "{ [id, x, y] -> [id, y] }";
-    std::string multicast_costs = "{ [id, y] -> y+1 }";
+        // Calculates the cost formulas of the first layer.
+        /// @note Read right to left like function composition.
+        std::string crease_costs = "{ [id, x, y] -> x: x >= 0; [id, x, y] -> -x: x < 0 }";
+        std::string fold_formula = "{ [id, x, y] -> [id, y] }";
+        std::string multicast_costs = "{ [id, y] -> y+1 }";
 
-    // Calculates the collapse formulas of the first layer.
-    std::string dst_collapse_formula = "{ [id] -> [id, x, y] }";
-    std::string src_collapse_formula = "{ [id] -> [id] }";
-    collapse collapse_formulas = collapse(new collapse_struct{src_collapse_formula, dst_collapse_formula});
+        // Calculates the collapse formulas of the first layer.
+        std::string dst_collapse_formula = "{ [id] -> [id, x, y] }";
+        std::string src_collapse_formula = "{ [id] -> [id] }";
+        collapse collapse_formulas = collapse(new collapse_struct{src_collapse_formula, dst_collapse_formula});
 
-    BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, collapse_formulas, ctx);
-    std::cout << "Evaluating..." << std::endl;
-    binding collapsed = test.evaluate(test_case);
-    // Prints out the collapsed binding abstraction for the next layer.
-    std::cout << "Collapsed: " << collapsed->srcs << std::endl;
-    std::cout << "Missing: " << collapsed->dsts << std::endl;
-    std::cout << "Done." << std::endl;
-
+        BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, collapse_formulas, ctx);
+        // std::cout << "Evaluating..." << std::endl;
+        binding collapsed = test.evaluate(test_case);
+        // Prints out the collapsed binding abstraction for the next layer.
+        // std::cout << "Collapsed: " << collapsed->srcs << std::endl;
+        // std::cout << "Missing: " << collapsed->dsts << std::endl;
+        // std::cout << "Done." << std::endl;
+        end = clock();
+        cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+        std::cout << "time: " << cpu_time_used << " | D: " << D << std::endl;
+    }
     ///@note Frees ctx to check for memory leaks through ISL.
     isl_ctx_free(ctx);
+
+    return 0;
 }
