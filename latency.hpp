@@ -74,6 +74,8 @@ void dump(std::string str, isl_multi_val *multi_val)
     }
 }
 
+#define DUMP(varname) dump(#varname, varname)
+
 /// @brief Strings representing the src and dst datum holds/requests in ISL.
 struct binding_struct
 {

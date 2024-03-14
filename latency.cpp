@@ -103,25 +103,26 @@ __isl_give isl_pw_qpolynomial *minimize_jumps(
         isl_map_identity(isl_space_map_from_set(isl_set_get_space(
             wrapped_dst_fill
         )));
-    dump("wrapped_fill_identity", wrapped_fill_identity);
+    DUMP(wrapped_fill_identity);
     wrapped_fill_identity = isl_map_intersect_domain(
         wrapped_fill_identity,
         wrapped_dst_fill
     );
-    dump("wrapped_fill_identity", wrapped_fill_identity);
+    DUMP(wrapped_fill_identity);
     /* Makes [dst -> data] -> [dst -> data] */
     isl_map* uncurried_fill_identity = isl_map_uncurry(wrapped_fill_identity);
-    dump("uncurried_fill_identity", uncurried_fill_identity);
+    DUMP(uncurried_fill_identity);
 
     /* Inverts src_occupancy such that data implies source.
      * i.e. {[xs, ys] -> [d0, d1]} becomes {[d0, d1] -> [xs, ys]} */
     isl_map *src_occupancy_inverted = isl_map_reverse(src_occupancy);
+    DUMP(src_occupancy_inverted);
 
     isl_map* dst_to_data_to_dst_TO_src = isl_map_apply_range(
         uncurried_fill_identity,
         src_occupancy_inverted
     );
-    dump("dst_to_data_to_dst_TO_src", dst_to_data_to_dst_TO_src);
+    DUMP(dst_to_data_to_dst_TO_src);
 
     isl_map* dst_to_data_TO_dst_to_src =
         isl_map_curry(dst_to_data_to_dst_TO_src);
@@ -130,14 +131,15 @@ __isl_give isl_pw_qpolynomial *minimize_jumps(
     isl_map *distances_map = isl_map_apply_range(
         dst_to_data_TO_dst_to_src, dist_func
     );
-    dump("distances_map", distances_map);
+    DUMP(distances_map);
 
     // Converts the distances map to a piecewise affine.
     isl_map *lexmin_distances = isl_map_lexmin(distances_map);
     isl_multi_pw_aff *dirty_distances_aff =isl_multi_pw_aff_from_pw_multi_aff(isl_pw_multi_aff_from_map(lexmin_distances));
-    // std::cout << "dirty_distances_aff" <<  isl_multi_pw_aff_to_str(dirty_distances_aff) << std::endl;
+    DUMP(dirty_distances_aff);
     assert(isl_multi_pw_aff_size(dirty_distances_aff) == 1);
     isl_pw_aff *distances_aff = isl_multi_pw_aff_get_at(dirty_distances_aff, 0);
+    DUMP(distances_aff);
     isl_multi_pw_aff_free(dirty_distances_aff);
 
     // Converts to a pw_qpolynomial for easier processing later.
