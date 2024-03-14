@@ -76,6 +76,15 @@ void dump(std::string str, isl_multi_val *multi_val)
     }
 }
 
+void dump(std::string str, isl_set *set)
+{
+    if (islIntermediates)
+    {
+        std::cout << str << std::endl;
+        isl_set_dump(set);
+    }
+}
+
 #define DUMP(varname) dump(#varname, varname)
 
 /// @brief Strings representing the src and dst datum holds/requests in ISL.
