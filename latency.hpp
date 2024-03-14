@@ -26,6 +26,8 @@ long analyze_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_pw_aff *di
 long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func);
 long analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_pw_aff *dist_func);
 long analyze_latency(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func);
+std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<std::string> dst_dims);
+std::string n_long_ring_metric(long n);
 
 // Defines debug variables from environment variables.
 #include <string.h>
