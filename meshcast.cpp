@@ -9,7 +9,7 @@
 // - Load balancing issues for multiple minimally distant sources.
 // - Compose minimal distances with the other set to remove non-minimal pairs then
 // move on with the rest of the algorithm.
-__isl_give isl_map *identify_minimal_pairs( 
+__isl_give isl_map *identify_mesh_casts( 
     __isl_take isl_map *src_occupancy, 
     __isl_take isl_map *dst_fill, 
     __isl_take isl_map *dist_func
@@ -58,11 +58,10 @@ __isl_give isl_map *identify_minimal_pairs(
     multicast_networks = isl_set_unwrap(isl_map_range(multicast_networks));
     DUMP(multicast_networks);
 
-    // Converts to a pw_qpolynomial for easier processing later.
     return minimal_pairs;
 }   
 
-isl_map *identify_minimal_pairs(
+isl_map *identify_mesh_casts(
     const std::string& src_occupancy, 
     const std::string& dst_fill, 
     const std::string& dist_func
@@ -85,9 +84,57 @@ isl_map *identify_minimal_pairs(
     );
 
     // Calls the isl version of analyze_latency.
-    isl_map *ret = identify_minimal_pairs(
+    isl_map *ret = identify_mesh_casts(
         p_src_occupancy,
         p_dst_fill,
+        p_dist_func
+    );
+
+    // Frees the isl objects.
+    isl_ctx_free(p_ctx);
+
+    return ret;
+}
+
+__isl_give isl_map *cost_mesh_cast(
+    __isl_take isl_map *mesh_cast_networks,
+    __isl_take isl_map *dist_func
+) {
+    DUMP(mesh_cast_networks);
+    DUMP(dist_func);
+    
+    // Calculates the cost per pair per datum.
+    isl_map *cost_per_pair_per_datum = isl_map_range_map(mesh_cast_networks);
+    cost_per_pair_per_datum = isl_map_apply_range(cost_per_pair_per_datum, dist_func);
+    DUMP(cost_per_pair_per_datum);
+    
+    isl_map *ret = isl_map_apply_range(mesh_cast_networks, dist_func);
+    return ret;
+}
+
+/**
+ * @return The cost per datum of each network.
+ */
+isl_map *cost_mesh_cast(
+    const std::string& mesh_cast_networks,
+    const std::string& dist_func
+) {
+    // Creates a new isl context.
+    isl_ctx *p_ctx = isl_ctx_alloc();
+
+    // Reads the string representations of the maps into isl objects.
+    isl_map *p_mesh_cast_networks = isl_map_read_from_str(
+        p_ctx,
+        mesh_cast_networks.c_str()
+    );
+    isl_map *p_dist_func = isl_map_read_from_str(
+        p_ctx,
+        dist_func.c_str()
+    );
+
+    // Calls the isl version of analyze_latency.
+    isl_map *ret = cost_mesh_cast(
+        p_mesh_cast_networks,
         p_dist_func
     );
 
@@ -129,7 +176,9 @@ int main(int argc, char* argv[])
                 xd >= xs and yd < ys
             })DIST";
     
-        identify_minimal_pairs(src_occupancy, dst_fill, dist_func_str);
+        auto mcs = identify_mesh_casts(src_occupancy, dst_fill, dist_func_str);
+        DUMP(mcs);
+        auto res = cost_mesh_cast(isl_map_to_str(mcs), dist_func_str);
         end = clock();
         cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     }
