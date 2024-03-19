@@ -107,9 +107,8 @@ __isl_give isl_map *cost_mesh_cast(
     isl_map *cost_per_pair_per_datum = isl_map_range_map(mesh_cast_networks);
     cost_per_pair_per_datum = isl_map_apply_range(cost_per_pair_per_datum, dist_func);
     DUMP(cost_per_pair_per_datum);
-    
-    isl_map *ret = isl_map_apply_range(mesh_cast_networks, dist_func);
-    return ret;
+
+    return cost_per_pair_per_datum;
 }
 
 /**
