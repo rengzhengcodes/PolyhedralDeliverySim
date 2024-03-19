@@ -22,6 +22,8 @@
 #include <barvinok/isl.h>
 #include <barvinok/polylib.h>
 
+__isl_give isl_pw_qpolynomial* gather_pw_qpolynomial_from_fold(__isl_take isl_pw_qpolynomial_fold* pwqpf);
+
 long analyze_jumps(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_pw_aff *dist_func);
 long analyze_jumps(const std::string& src_occupancy, const std::string& dst_fill, const std::string& dist_func);
 long analyze_latency(isl_map *p_src_occupancy, isl_map *p_dst_fill, isl_pw_aff *dist_func);
@@ -40,7 +42,7 @@ std::string nd_manhattan_metric(std::vector<std::string> src_dims, std::vector<s
 std::string n_long_ring_metric(long ring_circumference);
 
 // Defines debug dump function.
-void dump(std::string str, isl_map *map)
+void dump(const std::string& str, isl_map *map)
 {
     if (islIntermediates)
     {
@@ -49,7 +51,7 @@ void dump(std::string str, isl_map *map)
     }
 }
 
-void dump(std::string str, isl_pw_aff *pw_aff)
+void dump(const std::string& str, isl_pw_aff *pw_aff)
 {
     if (islIntermediates)
     {
@@ -58,7 +60,7 @@ void dump(std::string str, isl_pw_aff *pw_aff)
     }
 }
 
-void dump(std::string str, isl_multi_pw_aff *multi_pw_aff)
+void dump(const std::string& str, isl_multi_pw_aff *multi_pw_aff)
 {
     if (islIntermediates)
     {
@@ -67,7 +69,7 @@ void dump(std::string str, isl_multi_pw_aff *multi_pw_aff)
     }
 }
 
-void dump(std::string str, isl_multi_val *multi_val)
+void dump(const std::string& str, isl_multi_val *multi_val)
 {
     if (islIntermediates)
     {
@@ -76,12 +78,19 @@ void dump(std::string str, isl_multi_val *multi_val)
     }
 }
 
-void dump(std::string str, isl_set *set)
+void dump(const std::string& str, isl_set *set)
 {
     if (islIntermediates)
     {
         std::cout << str << std::endl;
         isl_set_dump(set);
+    }
+}
+
+void dump(const std::string& str, isl_pw_qpolynomial* pwqp) {
+    if (islIntermediates) {
+        std::cout << str << std::endl;
+        isl_pw_qpolynomial_dump(pwqp);
     }
 }
 

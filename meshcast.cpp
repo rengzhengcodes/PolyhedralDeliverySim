@@ -61,14 +61,12 @@ __isl_give isl_map *identify_mesh_casts(
     return minimal_pairs;
 }   
 
-isl_map *identify_mesh_casts(
+__isl_give isl_map *identify_mesh_casts(
+    isl_ctx *const p_ctx,
     const std::string& src_occupancy, 
     const std::string& dst_fill, 
     const std::string& dist_func
 ) {
-    // Creates a new isl context.
-    isl_ctx *p_ctx = isl_ctx_alloc();
-
     // Reads the string representations of the maps into isl objects.
     isl_map *p_src_occupancy = isl_map_read_from_str(
         p_ctx,
@@ -90,13 +88,10 @@ isl_map *identify_mesh_casts(
         p_dist_func
     );
 
-    // Frees the isl objects.
-    isl_ctx_free(p_ctx);
-
     return ret;
 }
 
-__isl_give isl_map *cost_mesh_cast(
+long cost_mesh_cast(
     __isl_take isl_map *mesh_cast_networks,
     __isl_take isl_map *dist_func
 ) {
@@ -105,21 +100,37 @@ __isl_give isl_map *cost_mesh_cast(
     
     // Calculates the cost per pair per datum.
     isl_map *cost_per_pair_per_datum = isl_map_range_map(mesh_cast_networks);
+    DUMP(cost_per_pair_per_datum);
     cost_per_pair_per_datum = isl_map_apply_range(cost_per_pair_per_datum, dist_func);
     DUMP(cost_per_pair_per_datum);
 
-    return cost_per_pair_per_datum;
+    // Converts to a qpolynomial for addition over range.
+    isl_multi_pw_aff *dirty_distances_aff =isl_multi_pw_aff_from_pw_multi_aff(isl_pw_multi_aff_from_map(cost_per_pair_per_datum));
+    DUMP(dirty_distances_aff);
+    assert(isl_multi_pw_aff_size(dirty_distances_aff) == 1);
+    isl_pw_aff *distances_aff = isl_multi_pw_aff_get_at(dirty_distances_aff, 0);
+    DUMP(distances_aff);
+    isl_multi_pw_aff_free(dirty_distances_aff);
+    auto *dirty_distances_fold = isl_pw_qpolynomial_from_pw_aff(distances_aff);
+    DUMP(dirty_distances_fold);
+
+    // Does the addition over range.
+    isl_pw_qpolynomial *sum = isl_pw_qpolynomial_sum(isl_pw_qpolynomial_sum(dirty_distances_fold));
+    // Grabs the return value as an isl_val.
+    isl_val *sum_extract = isl_pw_qpolynomial_eval(sum, isl_point_zero(isl_pw_qpolynomial_get_domain_space(sum)));
+    long ret = isl_val_get_num_si(sum_extract);
+
+    return ret;
 }
 
 /**
  * @return The cost per datum of each network.
  */
-isl_map *cost_mesh_cast(
+long cost_mesh_cast(
+    isl_ctx *const p_ctx,
     const std::string& mesh_cast_networks,
     const std::string& dist_func
 ) {
-    // Creates a new isl context.
-    isl_ctx *p_ctx = isl_ctx_alloc();
 
     // Reads the string representations of the maps into isl objects.
     isl_map *p_mesh_cast_networks = isl_map_read_from_str(
@@ -132,13 +143,10 @@ isl_map *cost_mesh_cast(
     );
 
     // Calls the isl version of analyze_latency.
-    isl_map *ret = cost_mesh_cast(
+    auto ret = cost_mesh_cast(
         p_mesh_cast_networks,
         p_dist_func
     );
-
-    // Frees the isl objects.
-    isl_ctx_free(p_ctx);
 
     return ret;
 }
@@ -152,6 +160,8 @@ int main(int argc, char* argv[])
     std::vector<int> D_vals({1});//, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
     clock_t start, end;
     double cpu_time_used;
+    isl_ctx *p_ctx = isl_ctx_alloc();
+
     for (int D_int : D_vals) {
         start = clock();
         std::string D = std::to_string(D_int);
@@ -175,9 +185,10 @@ int main(int argc, char* argv[])
                 xd >= xs and yd < ys
             })DIST";
     
-        auto mcs = identify_mesh_casts(src_occupancy, dst_fill, dist_func_str);
+        auto mcs = identify_mesh_casts(p_ctx, src_occupancy, dst_fill, dist_func_str);
         DUMP(mcs);
-        auto res = cost_mesh_cast(isl_map_to_str(mcs), dist_func_str);
+        auto res = cost_mesh_cast(p_ctx, isl_map_to_str(mcs), dist_func_str);
+        std::cout << res << std::endl;
         end = clock();
         cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     }
