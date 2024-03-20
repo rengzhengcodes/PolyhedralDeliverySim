@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#pragma O3
 /// NOTES FOR NON-TREE MULTICAST SCENARIO
 // - Load balancing issues for multiple minimally distant sources.
 // - Compose minimal distances with the other set to remove non-minimal pairs then
@@ -41,17 +42,25 @@ __isl_give isl_map *identify_mesh_casts(
 
     isl_map *dst_to_data_TO_dst_to_src =
         isl_map_curry(dst_to_data_to_dst_TO_src);
+    DUMP(dst_to_data_TO_dst_to_src);
 
     // Calculates the distance of all the dst-src pairs with matching data.
+    DUMP(dist_func);
     isl_map *distances_map = isl_map_apply_range(
-        isl_map_range_map(dst_to_data_TO_dst_to_src), dist_func
+        isl_map_copy(dst_to_data_TO_dst_to_src), isl_map_copy(dist_func)
     );
     DUMP(distances_map);
+    isl_map *dst_to_data_TO_dst_to_src_TO2_dst_to_src = isl_map_range_map(dst_to_data_TO_dst_to_src);
+    isl_map *dst_to_data_TO_dst_to_src_TO2_dist = isl_map_apply_range(dst_to_data_TO_dst_to_src_TO2_dst_to_src, dist_func);
+    DUMP(dst_to_data_TO_dst_to_src_TO2_dist);
 
     // Gets the minimal distance pairs.
     isl_map *lexmin_distances = isl_map_lexmin(distances_map);
-    // Isolates the relevant domain portions.
-    isl_map *minimal_pairs = isl_set_unwrap(isl_map_domain(lexmin_distances));
+    isl_map *assoc_dist_with_src = isl_map_apply_range(lexmin_distances, isl_map_reverse(
+        dst_to_data_TO_dst_to_src_TO2_dist
+    ));
+    // Isolates the relevant minimal pairs.
+    isl_map *minimal_pairs = isl_set_unwrap(isl_map_range(assoc_dist_with_src));
     DUMP(minimal_pairs);
     // Isolates the multicast networks.
     isl_map *multicast_networks = isl_map_curry(minimal_pairs);
@@ -98,28 +107,39 @@ long cost_mesh_cast(
     DUMP(mesh_cast_networks);
     DUMP(dist_func);
     
-    // Calculates the cost per pair per datum.
-    isl_map *cost_per_pair_per_datum = isl_map_range_map(mesh_cast_networks);
-    DUMP(cost_per_pair_per_datum);
-    cost_per_pair_per_datum = isl_map_apply_range(cost_per_pair_per_datum, dist_func);
-    DUMP(cost_per_pair_per_datum);
+    /**
+     * Makes mesh_cash_networks from [a, b] -> [[xd, yd] -> [xs -> ys]] to 
+     * [[a, b] -> [xs, ys]] -> [xd, yd]
+     */
+    mesh_cast_networks = isl_map_range_reverse(mesh_cast_networks);
+    DUMP(mesh_cast_networks);
+    // Uncurrys the mesh_cast_networks to [[a, b] -> [xs, ys]] -> [xd, yd]
+    mesh_cast_networks = isl_map_uncurry(mesh_cast_networks);
+    DUMP(mesh_cast_networks);
+    
+    // Isolates the parts in range.
+    isl_set *dst_dims = isl_map_range(mesh_cast_networks);
+    DUMP(dst_dims);
+    // Iterates through and identifies the furthest element per dimension.
 
     // Converts to a qpolynomial for addition over range.
-    isl_multi_pw_aff *dirty_distances_aff =isl_multi_pw_aff_from_pw_multi_aff(isl_pw_multi_aff_from_map(cost_per_pair_per_datum));
-    DUMP(dirty_distances_aff);
-    assert(isl_multi_pw_aff_size(dirty_distances_aff) == 1);
-    isl_pw_aff *distances_aff = isl_multi_pw_aff_get_at(dirty_distances_aff, 0);
-    DUMP(distances_aff);
-    isl_multi_pw_aff_free(dirty_distances_aff);
-    auto *dirty_distances_fold = isl_pw_qpolynomial_from_pw_aff(distances_aff);
-    DUMP(dirty_distances_fold);
+    // isl_multi_pw_aff *dirty_distances_aff =isl_multi_pw_aff_from_pw_multi_aff(
+    //     isl_pw_multi_aff_from_map(multi_cast_cost)
+    // );
+    // DUMP(dirty_distances_aff);
+    // assert(isl_multi_pw_aff_size(dirty_distances_aff) == 1);
+    // isl_pw_aff *distances_aff = isl_multi_pw_aff_get_at(dirty_distances_aff, 0);
+    // DUMP(distances_aff);
+    // isl_multi_pw_aff_free(dirty_distances_aff);
+    // auto *dirty_distances_fold = isl_pw_qpolynomial_from_pw_aff(distances_aff);
+    // DUMP(dirty_distances_fold);
 
-    // Does the addition over range.
-    isl_pw_qpolynomial *sum = isl_pw_qpolynomial_sum(isl_pw_qpolynomial_sum(dirty_distances_fold));
-    // Grabs the return value as an isl_val.
-    isl_val *sum_extract = isl_pw_qpolynomial_eval(sum, isl_point_zero(isl_pw_qpolynomial_get_domain_space(sum)));
-    long ret = isl_val_get_num_si(sum_extract);
-
+    // // Does the addition over range.
+    // isl_pw_qpolynomial *sum = isl_pw_qpolynomial_sum(isl_pw_qpolynomial_sum(dirty_distances_fold));
+    // // Grabs the return value as an isl_val.
+    // isl_val *sum_extract = isl_pw_qpolynomial_eval(sum, isl_point_zero(isl_pw_qpolynomial_get_domain_space(sum)));
+    // long ret = isl_val_get_num_si(sum_extract);
+    long ret = 0;
     return ret;
 }
 
@@ -157,7 +177,7 @@ int main(int argc, char* argv[])
     int N_int = 1024;
     std::string M = std::to_string(M_int);
     std::string N = std::to_string(N_int);
-    std::vector<int> D_vals({1});//, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
+    std::vector<int> D_vals({1});//1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
     clock_t start, end;
     double cpu_time_used;
     isl_ctx *p_ctx = isl_ctx_alloc();
@@ -166,22 +186,22 @@ int main(int argc, char* argv[])
         start = clock();
         std::string D = std::to_string(D_int);
         // Defines the src occupancy map as a string.
-        std::string src_occupancy = "{[xs, ys] -> [a, b] : ("+D+"*xs)%"+M+" <= a <= ("+
+        std::string src_occupancy = "{src[xs, ys] -> data[a, b] : ("+D+"*xs)%"+M+" <= a <= ("+
                                     D+"*xs+"+D+"-1)%"+M+" and b=ys and 0 <= xs < "+M+
                                     " and 0 <= ys < "+N+" and 0 <= a < "+M+" and 0 <= b < "+N+" }";
         // Defines the dst fill map as a string.
-        std::string dst_fill =  "{[xd, yd] -> [a, b] : b=yd and 0 <= xd < "+M+
+        std::string dst_fill =  "{dst[xd, yd] -> data[a, b] : b=yd and 0 <= xd < "+M+
                                 " and 0 <= yd < "+N+" and 0 <= a < "+M+" and 0 <= b < "+N+" }";
 
         // Defines the distance function string.
         std::string dist_func_str = R"DIST({
-            [[xd, yd] -> [xs, ys]] -> [(xd - xs) + (yd - ys)] : 
+            [dst[xd, yd] -> src[xs, ys]] -> dist[(xd - xs) + (yd - ys)] : 
                 xd >= xs and yd >= ys;
-            [[xd, yd] -> [xs, ys]] -> [-(xd - xs) + -(yd - ys)] : 
+            [dst[xd, yd] -> src[xs, ys]] -> dist[-(xd - xs) + -(yd - ys)] : 
                 xd < xs and yd < ys;
-            [[xd, yd] -> [xs, ys]] -> [-(xd - xs) + (yd - ys)] : 
+            [dst[xd, yd] -> src[xs, ys]] -> dist[-(xd - xs) + (yd - ys)] : 
                 xd < xs and yd >= ys;
-            [[xd, yd] -> [xs, ys]] -> [(xd - xs) + -(yd - ys)] : 
+            [dst[xd, yd] -> src[xs, ys]] -> dist[(xd - xs) + -(yd - ys)] : 
                 xd >= xs and yd < ys
             })DIST";
     
@@ -191,5 +211,6 @@ int main(int argc, char* argv[])
         std::cout << res << std::endl;
         end = clock();
         cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+        // std::cout << "Time: " << cpu_time_used << std::endl;
     }
 }
