@@ -66,8 +66,14 @@ __isl_give isl_map *identify_mesh_casts(
     isl_map *multicast_networks = isl_map_curry(minimal_pairs);
     multicast_networks = isl_set_unwrap(isl_map_range(multicast_networks));
     DUMP(multicast_networks);
+    multicast_networks = isl_map_uncurry(multicast_networks);
+    DUMP(multicast_networks);
+    multicast_networks = isl_map_lexmin(multicast_networks);
+    DUMP(multicast_networks);
+    multicast_networks = isl_map_curry(multicast_networks);
+    DUMP(multicast_networks);
 
-    return minimal_pairs;
+    return multicast_networks;
 }   
 
 __isl_give isl_map *identify_mesh_casts(
@@ -117,29 +123,38 @@ long cost_mesh_cast(
     mesh_cast_networks = isl_map_uncurry(mesh_cast_networks);
     DUMP(mesh_cast_networks);
     
-    // Isolates the parts in range.
-    isl_set *dst_dims = isl_map_range(mesh_cast_networks);
-    DUMP(dst_dims);
-    // Iterates through and identifies the furthest element per dimension.
+    // Projects away the xd dimension from mesh_cast_networks.
+    isl_map *multicast_simplification = isl_map_project_out(mesh_cast_networks, isl_dim_out, 1, 1);
+    DUMP(multicast_simplification);
+    // Finds max(yd) - min(yd) for each [a, b] -> [xs, ys].
+    isl_map *multicast_max = isl_map_lexmax(isl_map_copy(multicast_simplification));
+    DUMP(multicast_max);
+    isl_map *multicast_min = isl_map_lexmin(multicast_simplification);
+    DUMP(multicast_min);
+    // Subtracts the max from the min to get the range.
+    isl_map *multicast_min_neg = isl_map_neg(multicast_min);
+    DUMP(multicast_min_neg);
+    isl_map *multi_cast_cost = isl_map_sum(multicast_max, multicast_min);
+    DUMP(multi_cast_cost);
 
     // Converts to a qpolynomial for addition over range.
-    // isl_multi_pw_aff *dirty_distances_aff =isl_multi_pw_aff_from_pw_multi_aff(
-    //     isl_pw_multi_aff_from_map(multi_cast_cost)
-    // );
-    // DUMP(dirty_distances_aff);
-    // assert(isl_multi_pw_aff_size(dirty_distances_aff) == 1);
-    // isl_pw_aff *distances_aff = isl_multi_pw_aff_get_at(dirty_distances_aff, 0);
-    // DUMP(distances_aff);
-    // isl_multi_pw_aff_free(dirty_distances_aff);
-    // auto *dirty_distances_fold = isl_pw_qpolynomial_from_pw_aff(distances_aff);
-    // DUMP(dirty_distances_fold);
+    isl_multi_pw_aff *dirty_distances_aff =isl_multi_pw_aff_from_pw_multi_aff(
+        isl_pw_multi_aff_from_map(multi_cast_cost)
+    );
+    DUMP(dirty_distances_aff);
+    assert(isl_multi_pw_aff_size(dirty_distances_aff) == 1);
+    isl_pw_aff *distances_aff = isl_multi_pw_aff_get_at(dirty_distances_aff, 0);
+    DUMP(distances_aff);
+    isl_multi_pw_aff_free(dirty_distances_aff);
+    auto *dirty_distances_fold = isl_pw_qpolynomial_from_pw_aff(distances_aff);
+    DUMP(dirty_distances_fold);
 
-    // // Does the addition over range.
-    // isl_pw_qpolynomial *sum = isl_pw_qpolynomial_sum(isl_pw_qpolynomial_sum(dirty_distances_fold));
-    // // Grabs the return value as an isl_val.
-    // isl_val *sum_extract = isl_pw_qpolynomial_eval(sum, isl_point_zero(isl_pw_qpolynomial_get_domain_space(sum)));
-    // long ret = isl_val_get_num_si(sum_extract);
-    long ret = 0;
+    // Does the addition over range.
+    isl_pw_qpolynomial *sum = isl_pw_qpolynomial_sum(isl_pw_qpolynomial_sum(dirty_distances_fold));
+    // Grabs the return value as an isl_val.
+    isl_val *sum_extract = isl_pw_qpolynomial_eval(sum, isl_point_zero(isl_pw_qpolynomial_get_domain_space(sum)));
+    long ret = isl_val_get_num_si(sum_extract);
+
     return ret;
 }
 
@@ -173,11 +188,11 @@ long cost_mesh_cast(
 
 int main(int argc, char* argv[])
 {
-    int M_int = 1024;
-    int N_int = 1024;
+    int M_int = 4;
+    int N_int = 4;
     std::string M = std::to_string(M_int);
     std::string N = std::to_string(N_int);
-    std::vector<int> D_vals({1});//1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
+    std::vector<int> D_vals({1, 2, 4});
     clock_t start, end;
     double cpu_time_used;
     isl_ctx *p_ctx = isl_ctx_alloc();
@@ -189,6 +204,7 @@ int main(int argc, char* argv[])
         std::string src_occupancy = "{src[xs, ys] -> data[a, b] : ("+D+"*xs)%"+M+" <= a <= ("+
                                     D+"*xs+"+D+"-1)%"+M+" and b=ys and 0 <= xs < "+M+
                                     " and 0 <= ys < "+N+" and 0 <= a < "+M+" and 0 <= b < "+N+" }";
+        std::cout << src_occupancy << std::endl;
         // Defines the dst fill map as a string.
         std::string dst_fill =  "{dst[xd, yd] -> data[a, b] : b=yd and 0 <= xd < "+M+
                                 " and 0 <= yd < "+N+" and 0 <= a < "+M+" and 0 <= b < "+N+" }";
