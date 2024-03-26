@@ -116,10 +116,13 @@ class BranchTwig
             isl_pw_qpolynomial *p_card = isl_map_card(isl_map_copy(p_dsts));
             // Calculates the cost per datum per dst cast from the trunk.
             isl_pw_qpolynomial *p_fold_cost = isl_pw_qpolynomial_read_from_str(ctx, this->crease_costs.c_str());
+            DUMP(p_fold_cost);
             // Calculates the cost per dst cast from the trunk.
             isl_pw_qpolynomial *p_cost_at_dst = isl_pw_qpolynomial_mul(p_card, p_fold_cost);
+            DUMP(p_cost_at_dst);
             // Calculates the cost to cast all data from the trunk.
             isl_pw_qpolynomial *p_total_cost = isl_pw_qpolynomial_sum(p_cost_at_dst);
+            DUMP(p_total_cost);
             // Reads the value from p_total_cost.
             isl_val *v_total_cost = isl_pw_qpolynomial_eval(p_total_cost, isl_point_zero(isl_pw_qpolynomial_get_domain_space(p_total_cost)));
             // Initializes the variable storing the cost of folding.
@@ -138,10 +141,10 @@ class BranchTwig
             // std::cout << "P_Folded: " << isl_map_to_str(p_folded) << std::endl;
             // Gets the largest y value per datum.
             /// @todo Functionalize this.
-            std::string all_after = "{ [id, y] -> [id, y'] : y' > y }";
+            std::string all_after = "{ trunk[id, y] -> trunk[id, y'] : y' > y }";
             isl_map *p_all_after = isl_map_read_from_str(ctx, all_after.c_str());
             isl_map *p_max_y = isl_map_apply_range(p_all_after, isl_map_copy(p_folded));
-            // std::cout << "Max Y: " << isl_map_to_str(p_max_y) << std::endl;
+            DUMP(p_max_y);
             isl_map *p_folded_condensed = isl_map_subtract(p_folded, p_max_y);
             p_folded_condensed = isl_map_reverse(p_folded_condensed);
             // Converts p_folded_condensed to a string.
@@ -259,17 +262,17 @@ int main(int argc, char* argv[])
     int N_int = 1024;
     std::string M = std::to_string(M_int);
     std::string N = std::to_string(N_int);
-    std::vector<int> D_vals({1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
+    std::vector<int> D_vals({1});//, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024});
     clock_t start, end;
     double cpu_time_used;
     for (int D_int : D_vals) {
         start = clock();
         std::string D = std::to_string(D_int);
         std::string srcs = R"SRC(
-            {[id] -> [a, b] : id = 0}
+            {off[id] -> data[a, b] : id = 0}
         )SRC";
         // Defines the src occupancy map as a string.
-        std::string dsts =  "{[id, x, y] -> [a, b] : ("+D+"*x)%"+M+" <= a <= ("+
+        std::string dsts =  "{dst[id, x, y] -> data[a, b] : ("+D+"*x)%"+M+" <= a <= ("+
                             D+"*x+"+D+"-1)%"+M+" and b=y and 0 <= x < "+M+
                             " and 0 <= y < "+N+" and 0 <= a < "+M+" and 0 <= b < "
                             +N+" and id = 0 }";
@@ -277,13 +280,13 @@ int main(int argc, char* argv[])
 
         // Calculates the cost formulas of the first layer.
         /// @note Read right to left like function composition.
-        std::string crease_costs = "{ [id, x, y] -> x: x >= 0; [id, x, y] -> -x: x < 0 }";
-        std::string fold_formula = "{ [id, x, y] -> [id, y] }";
-        std::string multicast_costs = "{ [id, y] -> y+1 }";
+        std::string crease_costs = "{ dst[id, x, y] -> x: x >= 0; dst[id, x, y] -> -x: x < 0 }";
+        std::string fold_formula = "{ dst[id, x, y] -> trunk[id, y] }";
+        std::string multicast_costs = "{ trunk[id, y] -> y+1 }";
 
         // Calculates the collapse formulas of the first layer.
-        std::string dst_collapse_formula = "{ [id] -> [id, x, y] }";
-        std::string src_collapse_formula = "{ [id] -> [id] }";
+        std::string dst_collapse_formula = "{ off[id] -> dst[id, x, y] }";
+        std::string src_collapse_formula = "{ off[id] -> off[id] }";
         collapse collapse_formulas = collapse(new collapse_struct{src_collapse_formula, dst_collapse_formula});
 
         BranchTwig test = BranchTwig(crease_costs, fold_formula, multicast_costs, collapse_formulas, ctx);
